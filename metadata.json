@@ -1,0 +1,13 @@
+{
+  "name": "Pro-Artisan Marketplace",
+  "description": "A digital marketplace empowering modern artisans with AI-driven tools for product creation and shop management.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "AI-powered product descriptions",
+    "Artisan dashboard",
+    "Inventory management"
+  ]
+}
