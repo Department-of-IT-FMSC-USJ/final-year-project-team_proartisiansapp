@@ -1,3 +1,4 @@
+import { registerUser } from "@/src/services/authService";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Lock, LockKeyhole, MapPin, ChevronRight, SignalLow, SignalMedium, SignalHigh, Info } from "lucide-react";
 import { Button } from "@/src/components/Button";
@@ -9,6 +10,43 @@ import { cn } from "@/src/lib/utils";
 export default function Registration() {
   const navigate = useNavigate();
   const [skillLevel, setSkillLevel] = useState<"basic" | "intermediate" | "advanced">("basic");
+  const [sellerName, setSellerName] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [location, setLocation] = useState("");
+  const [category, setCategory] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (password !== confirmPassword) {
+    alert("Passwords do not match");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    await registerUser(
+      sellerName,
+      email,
+      password,
+      "seller"
+    );
+
+    alert("Registration successful!");
+
+    navigate("/dashboard");
+
+  } catch (error: any) {
+    alert(error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-surface max-w-md mx-auto overflow-x-hidden">
@@ -25,10 +63,20 @@ export default function Registration() {
           <p className="text-on-surface-variant text-sm">Tell us about your business to get started on the marketplace.</p>
         </div>
 
-        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); navigate("/shop-setup"); }}>
-          <Input label="Seller Name" placeholder="Enter your full name" required />
-          <Input label="Business Name (Optional)" placeholder="Enter business name" />
-          
+        <form className="space-y-6" onSubmit={handleRegister}>
+          <Input
+            label="Seller Name"
+            placeholder="Enter your full name"
+            required
+            value={sellerName}
+            onChange={(e) => setSellerName(e.target.value)}
+          />
+          <Input
+            label="Business Name (Optional)"
+            placeholder="Enter business name"
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+          />
           <div className="space-y-2">
             <p className="text-on-surface text-sm font-semibold">Phone Number</p>
             <div className="relative group">
@@ -41,10 +89,42 @@ export default function Registration() {
             </div>
           </div>
 
-          <Input label="Password" placeholder="Enter password" type="password" leftIcon={<LockKeyhole size={18} />} required />
-          <Input label="Confirm Password" placeholder="Confirm your password" type="password" leftIcon={<LockKeyhole size={18} />} required />
+          <Input
+            label="Email"
+            placeholder="Enter your email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
           
-          <Input label="Location" placeholder="City, Country" leftIcon={<MapPin size={18} />} required />
+          <Input
+            label="Password"
+            placeholder="Enter password"
+            type="password"
+            leftIcon={<LockKeyhole size={18} />}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Input
+            label="Confirm Password"
+            placeholder="Confirm your password"
+            type="password"
+            leftIcon={<LockKeyhole size={18} />}
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          <Input
+            label="Location"
+            placeholder="City, Country"
+            leftIcon={<MapPin size={18} />}
+            required
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
 
           <Select label="Product Category" required>
             <option value="" disabled selected>Select category</option>
@@ -81,7 +161,8 @@ export default function Registration() {
 
           <div className="pt-8">
             <Button type="submit" className="w-full h-16 rounded-2xl text-lg">
-              Create Seller Account <ChevronRight className="ml-2 w-5 h-5" />
+              {loading ? "Creating Account..." : "Create Seller Account"}
+              {!loading && <ChevronRight className="ml-2 w-5 h-5" />}
             </Button>
           </div>
         </form>
