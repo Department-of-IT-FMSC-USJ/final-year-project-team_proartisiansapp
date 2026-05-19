@@ -1,95 +1,194 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Phone } from "lucide-react";
+import { ArrowLeft, Mail, Phone, LockKeyhole, MapPin } from "lucide-react";
+
 import { Button } from "@/src/components/Button";
 import { Input } from "@/src/components/Input";
-import { motion } from "motion/react";
+import { registerUser, signInWithGoogle } from "@/src/services/authService";
+import { useUser } from "@/src/context/UserContext";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const { setIsAuthenticated } = useUser();
+
+  const [sellerName, setSellerName] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await registerUser(sellerName, email, password, "seller");
+
+      setIsAuthenticated(true);
+
+      alert("Seller account created successfully!");
+
+      navigate("/dashboard");
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleRegister = async () => {
+    try {
+      await signInWithGoogle();
+
+      setIsAuthenticated(true);
+
+      alert("Google registration successful!");
+
+      navigate("/dashboard");
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-surface max-w-md mx-auto overflow-x-hidden">
-      <header className="flex items-center p-4 justify-between sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="text-on-surface flex size-12 shrink-0 items-center justify-start cursor-pointer">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h2 className="text-on-surface text-sm font-bold flex-1 text-center pr-12">Seller Authentication</h2>
+      <header className="flex items-center p-4 pb-2 justify-between">
+        <div
+          onClick={() => navigate(-1)}
+          className="text-on-surface flex size-12 shrink-0 items-center justify-start cursor-pointer"
+        >
+          <ArrowLeft size={24} />
+        </div>
+        <h2 className="text-on-surface text-sm font-bold flex-1 text-center pr-12">
+          Pro-Artisan Marketplace
+        </h2>
       </header>
 
-      <main className="flex-1 flex flex-col items-center px-6 py-12">
-        <div className="w-full text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary-container/10 text-primary-container mb-6">
-            <StoreIcon className="w-10 h-10" />
-          </div>
-          <h1 className="text-on-surface text-3xl font-bold mb-3 tracking-tight">Welcome Seller</h1>
-          <p className="text-on-surface-variant text-base">Enter your details to start selling.</p>
-        </div>
+      <div className="flex flex-col px-6 pt-10 flex-1">
+        <h1 className="text-on-surface tracking-tight text-[32px] font-bold leading-tight pb-3">
+          Join as a Seller
+        </h1>
 
-        <div className="w-full space-y-8">
-          <Input 
-            label="Phone Number" 
-            placeholder="+1 (555) 000-0000" 
-            type="tel"
-            leftIcon={<Phone size={18} />}
+        <p className="text-on-surface-variant text-base font-normal leading-normal pb-8">
+          Create your artisan store and start selling today.
+        </p>
+
+        <div className="flex flex-col gap-6 pb-6">
+          <Input
+            label="Seller Name"
+            placeholder="Enter your full name"
+            required
+            value={sellerName}
+            onChange={(e) => setSellerName(e.target.value)}
           />
 
-          <Button 
-            className="w-full h-14" 
-            onClick={() => navigate("/verification")}
+          <Input
+            label="Business Name"
+            placeholder="Enter business name (optional)"
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+          />
+
+          <Input
+            label="Email Address"
+            placeholder="Enter your email"
+            type="email"
+            leftIcon={<Mail size={18} />}
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <Input
+            label="Phone Number"
+            placeholder="+94 77 123 4567"
+            type="tel"
+            leftIcon={<Phone size={18} />}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+
+          <Input
+            label="Location"
+            placeholder="City / District"
+            leftIcon={<MapPin size={18} />}
+            required
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
+
+          <Input
+            label="Password"
+            placeholder="Enter password"
+            type="password"
+            leftIcon={<LockKeyhole size={18} />}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <Input
+            label="Confirm Password"
+            placeholder="Confirm password"
+            type="password"
+            leftIcon={<LockKeyhole size={18} />}
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col py-3">
+          <Button
+            className="w-full h-16 rounded-2xl text-lg"
+            onClick={handleRegister}
           >
-            Send OTP <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
-
-          <div className="relative flex items-center py-2">
-            <div className="flex-1 border-t border-outline-variant"></div>
-            <span className="px-4 text-xs font-bold text-outline uppercase tracking-widest bg-surface">OR</span>
-            <div className="flex-1 border-t border-outline-variant"></div>
-          </div>
-
-          <Button variant="outline" className="w-full h-14 bg-white border-outline-variant">
-            <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" className="w-5 h-5 mr-3" alt="Google" />
-            Continue with Google
+            {loading ? "Creating Account..." : "Create Seller Account"}
           </Button>
         </div>
 
-        <div className="mt-12 text-center">
-          <p className="text-on-surface-variant text-sm">
-            Already have an account? 
-            <button className="text-primary-container font-bold hover:underline ml-1" onClick={() => navigate("/login")}>Log in</button>
-          </p>
+        <div className="flex items-center my-8">
+          <div className="flex-1 border-t border-outline-variant"></div>
+          <span className="px-4 text-xs font-bold text-outline uppercase tracking-widest bg-surface">
+            OR
+          </span>
+          <div className="flex-1 border-t border-outline-variant"></div>
         </div>
-      </main>
 
-      <footer className="p-8 mt-auto flex flex-col items-center">
-        <div className="flex justify-center gap-3 mb-4">
-          <div className="w-2 h-2 rounded-full bg-outline-variant"></div>
-          <div className="w-4 h-2 rounded-full bg-primary-container"></div>
-          <div className="w-2 h-2 rounded-full bg-outline-variant"></div>
+        <div className="flex flex-col gap-4">
+          <Button
+            variant="outline"
+            className="w-full h-16 rounded-2xl border-2 border-outline-variant bg-white hover:bg-gray-50 text-base font-semibold"
+            onClick={handleGoogleRegister}
+          >
+            <img
+              src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png"
+              className="w-5 h-5 mr-3"
+              alt="Google"
+            />
+            Register with Google
+          </Button>
         </div>
-        <p className="text-outline text-[10px] text-center max-w-[200px]">
-          By continuing, you agree to our Terms of Service and Privacy Policy
+      </div>
+
+      <div className="mt-auto p-6 text-center">
+        <p className="text-xs text-outline font-medium">
+          Already have an account?
+          <button
+            className="text-primary-container font-black ml-1 hover:underline underline-offset-4"
+            onClick={() => navigate("/login")}
+          >
+            Log in
+          </button>
         </p>
-      </footer>
+      </div>
     </div>
-  );
-}
-
-function StoreIcon(props: any) {
-  return (
-    <svg 
-      {...props}
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
-      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-      <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
-      <path d="M2 7h20" />
-      <path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7" />
-    </svg>
   );
 }
