@@ -10,6 +10,8 @@ import { useUser } from "@/src/context/UserContext";
 export default function Auth() {
   const navigate = useNavigate();
   const { setIsAuthenticated } = useUser();
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [sellerName, setSellerName] = useState("");
   const [businessName, setBusinessName] = useState("");
@@ -21,8 +23,10 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
+    setSuccessMessage("");
+    setErrorMessage("");
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      setSuccessMessage("Passwords do not match");
       return;
     }
 
@@ -33,11 +37,17 @@ export default function Auth() {
 
       setIsAuthenticated(true);
 
-      alert("Seller account created successfully!");
+      setSuccessMessage("Seller account created successfully!");
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2000);
 
       navigate("/dashboard");
     } catch (error: any) {
-      alert(error.message);
+      setErrorMessage(error.message);
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2000);
     } finally {
       setLoading(false);
     }
@@ -49,11 +59,11 @@ export default function Auth() {
 
       setIsAuthenticated(true);
 
-      alert("Google registration successful!");
+      setSuccessMessage("Google registration successful!");
 
       navigate("/dashboard");
     } catch (error: any) {
-      alert(error.message);
+      setErrorMessage(error.message);
     }
   };
 
@@ -70,6 +80,18 @@ export default function Auth() {
           Pro-Artisan Marketplace
         </h2>
       </header>
+
+      {successMessage && (
+        <div className="mb-6 bg-green-100 border border-green-300 text-green-700 px-4 py-3 rounded-2xl text-sm font-medium">
+          ✅ {successMessage}
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="mb-6 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium">
+          ❌ {errorMessage}
+        </div>
+      )}
 
       <div className="flex flex-col px-6 pt-10 flex-1">
         <h1 className="text-on-surface tracking-tight text-[32px] font-bold leading-tight pb-3">
