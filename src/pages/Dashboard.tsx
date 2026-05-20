@@ -1,29 +1,50 @@
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Sparkles, PlusCircle, ArrowUpRight, TrendingUp } from "lucide-react";
 import { Button } from "@/src/components/Button";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [successMessage, setSuccessMessage] = useState(
+    location.state?.successMessage || "",
+  );
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage("");
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   return (
     <div className="p-4 space-y-6">
+      {successMessage && (
+        <div className="mx-6 mt-4 mb-6 bg-green-100 border border-green-300 text-green-700 px-4 py-3 rounded-2xl text-sm font-medium">
+          {successMessage}
+        </div>
+      )}
       <header>
         <h1 className="text-2xl font-black text-on-surface">Store Overview</h1>
         <p className="text-outline text-sm">Last 30 days performance</p>
       </header>
 
       <div className="grid grid-cols-2 gap-4">
-        <StatsCard 
-          label="Total Products" 
-          value="42" 
-          change="+5%" 
+        <StatsCard
+          label="Total Products"
+          value="42"
+          change="+5%"
           icon={<PackageIcon className="text-primary-container" />}
         />
-        <StatsCard 
-          label="Orders Completed" 
-          value="128" 
-          change="+12%" 
+        <StatsCard
+          label="Orders Completed"
+          value="128"
+          change="+12%"
           icon={<ShoppingBagIcon className="text-primary-container" />}
         />
       </div>
@@ -34,9 +55,13 @@ export default function Dashboard() {
             <span className="text-primary-container bg-primary-container/10 p-2 rounded-lg">
               <TrendingUp size={20} />
             </span>
-            <p className="text-[10px] font-black uppercase tracking-widest text-outline">Pending Orders</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-outline">
+              Pending Orders
+            </p>
           </div>
-          <span className="text-primary-container font-black text-xs">+8.4%</span>
+          <span className="text-primary-container font-black text-xs">
+            +8.4%
+          </span>
         </div>
         <div className="flex items-end justify-between">
           <p className="text-on-surface text-4xl font-black">2,480</p>
@@ -64,7 +89,16 @@ export default function Dashboard() {
           </button>
         </div>
         <div className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
-          <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="200"
+            height="200"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            strokeWidth="1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .5 2.2 1.5 3.1.7.7 1.3 1.5 1.5 2.4" />
             <path d="M9 18h6" />
             <path d="M10 22h4" />
@@ -72,24 +106,33 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <Button className="w-full h-16 rounded-2xl text-lg flex gap-3 shadow-primary-glow" onClick={() => navigate("/add-product")}>
+      <Button
+        className="w-full h-16 rounded-2xl text-lg flex gap-3 shadow-primary-glow"
+        onClick={() => navigate("/add-product")}
+      >
         <PlusCircle size={22} /> List a New Product
       </Button>
 
       <div className="space-y-4 pt-4">
         <div className="flex justify-between items-center">
-            <h4 className="text-sm font-black uppercase tracking-widest text-outline">Recent Activity</h4>
-            <button className="text-primary-container text-xs font-bold flex items-center">See All <ArrowUpRight size={14} /></button>
+          <h4 className="text-sm font-black uppercase tracking-widest text-outline">
+            Recent Activity
+          </h4>
+          <button className="text-primary-container text-xs font-bold flex items-center">
+            See All <ArrowUpRight size={14} />
+          </button>
         </div>
         <div className="bg-white rounded-2xl border border-outline-variant/10 p-4 flex items-center gap-4">
-            <div className="size-10 bg-primary-container/10 rounded-xl flex items-center justify-center text-primary-container">
-                <ShoppingBagIcon className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-                <p className="text-sm font-bold">New Order Received</p>
-                <p className="text-[10px] text-outline">Hand-woven Ceramic Vase (#ORD-882)</p>
-            </div>
-            <p className="text-sm font-black">$85.00</p>
+          <div className="size-10 bg-primary-container/10 rounded-xl flex items-center justify-center text-primary-container">
+            <ShoppingBagIcon className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold">New Order Received</p>
+            <p className="text-[10px] text-outline">
+              Hand-woven Ceramic Vase (#ORD-882)
+            </p>
+          </div>
+          <p className="text-sm font-black">$85.00</p>
         </div>
       </div>
     </div>
@@ -102,10 +145,14 @@ const StatsCard = ({ label, value, change, icon }: any) => (
       <div className="size-10 rounded-xl bg-primary-container/10 flex items-center justify-center">
         {icon}
       </div>
-      <span className="text-primary-container text-xs font-black">{change}</span>
+      <span className="text-primary-container text-xs font-black">
+        {change}
+      </span>
     </div>
     <div>
-      <p className="text-[9px] font-black uppercase tracking-widest text-outline mb-1">{label}</p>
+      <p className="text-[9px] font-black uppercase tracking-widest text-outline mb-1">
+        {label}
+      </p>
       <p className="text-3xl font-black text-on-surface">{value}</p>
     </div>
   </div>
@@ -113,16 +160,37 @@ const StatsCard = ({ label, value, change, icon }: any) => (
 
 function PackageIcon(props: any) {
   return (
-    <svg {...props} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      {...props}
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-      <path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" />
+      <path d="m3.3 7 8.7 5 8.7-5" />
+      <path d="M12 22V12" />
     </svg>
   );
 }
 
 function ShoppingBagIcon(props: any) {
   return (
-    <svg {...props} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      {...props}
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
       <path d="M3 6h18" />
       <path d="M16 10a4 4 0 0 1-8 0" />

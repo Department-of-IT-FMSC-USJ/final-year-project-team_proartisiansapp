@@ -10,12 +10,15 @@ import { loginUser, signInWithGoogle } from "@/src/services/authService";
 export default function Login() {
   const navigate = useNavigate();
   const { setIsAuthenticated } = useUser();
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    setErrorMessage("");
+
     try {
       setLoading(true);
 
@@ -23,27 +26,37 @@ export default function Login() {
 
       setIsAuthenticated(true);
 
-      alert("Login successful!");
-
-      navigate("/dashboard");
+      navigate("/dashboard", {
+        state: {
+          successMessage: "✅ Login successful!",
+        },
+      });
     } catch (error: any) {
-      alert(error.message);
+      setErrorMessage("❌ Incorrect email or password");
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
+    setErrorMessage("");
+
     try {
+      setLoading(true);
+
       await signInWithGoogle();
 
       setIsAuthenticated(true);
 
-      alert("Google login successful!");
-
-      navigate("/dashboard");
+      navigate("/dashboard", {
+        state: {
+          successMessage: "✅ Google login successful!",
+        },
+      });
     } catch (error: any) {
-      alert(error.message);
+      setErrorMessage("❌ Google login failed. Try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,6 +74,12 @@ export default function Login() {
           Pro-Artisan Marketplace
         </h2>
       </header>
+
+      {errorMessage && (
+        <div className="mx-6 mb-6 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium">
+          ❌ {errorMessage}
+        </div>
+      )}
 
       <div className="flex flex-col px-6 pt-10 flex-1">
         <h1 className="text-on-surface tracking-tight text-[32px] font-bold leading-tight pb-3">
