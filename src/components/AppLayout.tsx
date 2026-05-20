@@ -1,9 +1,11 @@
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, ShoppingBag, User, Menu, Bell } from "lucide-react";
 import { cn } from "@/src/lib/utils";
-import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "./Button";
+import { useEffect, useState } from "react";
+import { auth, db } from "@/src/firebase/firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
 
 // Custom icons based on design
 const NavIcon = ({ icon: Icon, active }: { icon: any; active: boolean }) => (
@@ -19,6 +21,11 @@ export const AppLayout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const [shopData, setShopData] = useState({
+    shopName: "",
+    location: "",
+    photoURL: "",
+  });
 
   const navItems = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -38,6 +45,23 @@ export const AppLayout = () => {
     "/welcome",
   ].includes(location.pathname);
 
+  useEffect(() => {
+    const fetchShopData = async () => {
+      const user = auth.currentUser;
+
+      if (!user) return;
+
+      const shopRef = doc(db, "shops", user.uid);
+      const shopSnap = await getDoc(shopRef);
+
+      if (shopSnap.exists()) {
+        setShopData(shopSnap.data() as any);
+      }
+    };
+
+    fetchShopData();
+  }, []);
+
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-surface max-w-md mx-auto overflow-x-hidden border-x border-outline-variant/10">
       {!hideNav && (
@@ -51,12 +75,14 @@ export const AppLayout = () => {
             </button>
             <div className="size-10 rounded-full border-2 border-primary-container/20 overflow-hidden">
               <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZBNv3XBeydVeVYFfQyhtnZ8iGmwrczaZQr8V97hiAlZZFWBqqj6JX6_F8z-9vJBQz3sSUqLq-tJN_7sGToC6gs4b5PM0336IxkX6VkmRf4QcIjtkpQZmW8qGzhGyGGXeBzJY-l16EXHpRHQD0zwXeSxRn0vOOeByoNef_vxd91mrOJOPr6XjrvbjKwFHd6MwcNVaUT3K8yK-Cpw0Vw9GRt0NjD5WnKCT56JPaQUyqfJa54X_nQDmXykZ3ab2rSIT9Hki1_7bRfA"
+                src={shopData.photoURL || "https://via.placeholder.com/150"}
                 className="object-cover"
               />
             </div>
             <div>
-              <p className="text-xs font-bold leading-none">Artisan Hub</p>
+              <p className="text-xs font-bold leading-none">
+                {shopData.shopName || "Loading..."}
+              </p>
               <p className="text-[10px] text-primary-container font-bold uppercase tracking-wider">
                 Pro Seller
               </p>
@@ -130,12 +156,16 @@ export const AppLayout = () => {
                 <div className="flex items-center gap-4">
                   <div className="size-16 rounded-3xl overflow-hidden border-2 border-primary-container/20">
                     <img
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZBNv3XBeydVeVYFfQyhtnZ8iGmwrczaZQr8V97hiAlZZFWBqqj6JX6_F8z-9vJBQz3sSUqLq-tJN_7sGToC6gs4b5PM0336IxkX6VkmRf4QcIjtkpQZmW8qGzhGyGGXeBzJY-l16EXHpRHQD0zwXeSxRn0vOOeByoNef_vxd91mrOJOPr6XjrvbjKwFHd6MwcNVaUT3K8yK-Cpw0Vw9GRt0NjD5WnKCT56JPaQUyqfJa54X_nQDmXykZ3ab2rSIT9Hki1_7bRfA"
+                      src={
+                        shopData.photoURL || "https://via.placeholder.com/150"
+                      }
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg">Julian Craft</h3>
+                    <h3 className="font-bold text-lg">
+                      {shopData.shopName || "Loading..."}
+                    </h3>
                     <div className="bg-primary-container/10 text-primary-container px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                       <CheckCircle size={10} className="fill-current" />
                       <span className="text-[9px] font-black uppercase tracking-widest">

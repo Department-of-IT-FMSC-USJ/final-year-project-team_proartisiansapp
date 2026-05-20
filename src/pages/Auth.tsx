@@ -116,9 +116,14 @@ export default function Auth() {
 
           <Input
             label="Phone Number"
-            placeholder="+94 77 123 4567"
+            placeholder="771234567"
             type="tel"
-            leftIcon={<Phone size={18} />}
+            leftIcon={
+              <div className="flex items-center gap-2">
+                <Phone size={18} />
+                <span className="text-sm text-gray-500">+94</span>
+              </div>
+            }
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />

@@ -17,6 +17,18 @@ export default function ShopSetup() {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (file) {
+      setPhoto(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSave = async () => {
     setErrorMessage("");
     setSuccessMessage("");
@@ -88,17 +100,30 @@ export default function ShopSetup() {
           {/* Logo Upload (UI only for now) */}
           <div className="flex flex-col items-center gap-6">
             <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                id="photoUpload"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
               <div className="size-32 rounded-full overflow-hidden border-4 border-primary-container/20 p-1 bg-surface-container-low">
                 <img
-                  src="https://images.unsplash.com/photo-1541746972996-4e0b0f43e03a?auto=format&fit=crop&q=80&w=400"
+                  src={
+                    photoPreview ||
+                    "https://images.unsplash.com/photo-1541746972996-4e0b0f43e03a?auto=format&fit=crop&q=80&w=400"
+                  }
                   className="w-full h-full object-cover rounded-full"
                   alt="Shop Preview"
                 />
               </div>
 
-              <button className="absolute bottom-0 right-0 size-10 bg-primary-container text-on-primary-container rounded-full shadow-lg border-2 border-white flex items-center justify-center">
+              <label
+                htmlFor="photoUpload"
+                className="absolute bottom-0 right-0 size-10 bg-primary-container text-on-primary-container rounded-full shadow-lg border-2 border-white flex items-center justify-center cursor-pointer"
+              >
                 <Camera size={18} />
-              </button>
+              </label>
             </div>
 
             <div className="text-center">
@@ -109,17 +134,13 @@ export default function ShopSetup() {
                 Tell customers about your handmade products.
               </p>
             </div>
-
-            <Button variant="secondary" size="sm">
-              Upload Photo
-            </Button>
           </div>
 
           {/* Form */}
           <div className="space-y-6">
             <Input
               label="Shop Name"
-              placeholder="e.g. Kasun Art Creations"
+              placeholder="e.g. Example Art Creations"
               value={shopName}
               onChange={(e) => setShopName(e.target.value)}
               required
