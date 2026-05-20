@@ -14,19 +14,17 @@ export default function Auth() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const [sellerName, setSellerName] = useState("");
-  const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [location, setLocation] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    setSuccessMessage("");
     setErrorMessage("");
+
     if (password !== confirmPassword) {
-      setSuccessMessage("Passwords do not match");
+      setErrorMessage("❌ Passwords do not match");
       return;
     }
 
@@ -34,36 +32,37 @@ export default function Auth() {
       setLoading(true);
 
       await registerUser(sellerName, email, password, "seller");
-
       setIsAuthenticated(true);
-
-      setSuccessMessage("Seller account created successfully!");
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 2000);
-
-      navigate("/dashboard");
+      navigate("/shop-setup", {
+        state: {
+          successMessage: "✅ Seller account created successfully!",
+        },
+      });
     } catch (error: any) {
       setErrorMessage(error.message);
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 2000);
     } finally {
       setLoading(false);
     }
   };
-
   const handleGoogleRegister = async () => {
+    setErrorMessage("");
+
     try {
+      setLoading(true);
+
       await signInWithGoogle();
 
       setIsAuthenticated(true);
 
-      setSuccessMessage("Google registration successful!");
-
-      navigate("/dashboard");
+      navigate("/shop-setup", {
+        state: {
+          successMessage: "✅ Google registration successful!",
+        },
+      });
     } catch (error: any) {
-      setErrorMessage(error.message);
+      setErrorMessage("❌ Google registration failed. Try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -80,12 +79,6 @@ export default function Auth() {
           Pro-Artisan Marketplace
         </h2>
       </header>
-
-      {successMessage && (
-        <div className="mb-6 bg-green-100 border border-green-300 text-green-700 px-4 py-3 rounded-2xl text-sm font-medium">
-          ✅ {successMessage}
-        </div>
-      )}
 
       {errorMessage && (
         <div className="mb-6 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium">
@@ -112,13 +105,6 @@ export default function Auth() {
           />
 
           <Input
-            label="Business Name"
-            placeholder="Enter business name (optional)"
-            value={businessName}
-            onChange={(e) => setBusinessName(e.target.value)}
-          />
-
-          <Input
             label="Email Address"
             placeholder="Enter your email"
             type="email"
@@ -135,15 +121,6 @@ export default function Auth() {
             leftIcon={<Phone size={18} />}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-          />
-
-          <Input
-            label="Location"
-            placeholder="City / District"
-            leftIcon={<MapPin size={18} />}
-            required
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
           />
 
           <Input

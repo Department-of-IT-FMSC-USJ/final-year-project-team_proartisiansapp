@@ -1,18 +1,59 @@
 import { useNavigate } from "react-router-dom";
-import { User, LogOut, ChevronRight, Settings, ShieldCheck, CreditCard, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  User,
+  LogOut,
+  ChevronRight,
+  Settings,
+  ShieldCheck,
+  CreditCard,
+  Share2,
+} from "lucide-react";
 import { Button } from "@/src/components/Button";
+import { auth } from "@/src/firebase/firebaseConfig";
+import { getShopProfile } from "@/src/services/shopService";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const [shopName, setShopName] = useState("Loading...");
+  const [location, setLocation] = useState("Loading...");
+  const [logoUrl, setLogoUrl] = useState("https://via.placeholder.com/150");
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    navigate("/");
+  };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const user = auth.currentUser;
+
+        if (!user) return;
+
+        const profile = await getShopProfile(user.uid);
+
+        if (profile) {
+          setShopName(profile.shopName || "No Shop Name");
+          setLocation(profile.location || "No Location");
+          setLogoUrl(profile.logoUrl || "https://via.placeholder.com/150");
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile");
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   return (
     <div className="p-4 space-y-6">
       <header className="flex flex-col items-center py-6">
         <div className="size-24 rounded-3xl overflow-hidden border-4 border-primary-container/20 mb-4 shadow-soft">
-          <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZBNv3XBeydVeVYFfQyhtnZ8iGmwrczaZQr8V97hiAlZZFWBqqj6JX6_F8z-9vJBQz3sSUqLq-tJN_7sGToC6gs4b5PM0336IxkX6VkmRf4QcIjtkpQZmW8qGzhGyGGXeBzJY-l16EXHpRHQD0zwXeSxRn0vOOeByoNef_vxd91mrOJOPr6XjrvbjKwFHd6MwcNVaUT3K8yK-Cpw0Vw9GRt0NjD5WnKCT56JPaQUyqfJa54X_nQDmXykZ3ab2rSIT9Hki1_7bRfA" className="w-full h-full object-cover" />
+          <img src={logoUrl} />
         </div>
-        <h2 className="text-xl font-black">Julian Craft</h2>
-        <p className="text-outline text-sm">San Francisco, CA</p>
+        <h2 className="text-xl font-black">{shopName}</h2>
+        <p className="text-outline text-sm">{location}</p>
       </header>
 
       <div className="bg-white rounded-[2rem] border border-outline-variant/10 overflow-hidden shadow-soft">
@@ -24,7 +65,11 @@ export default function Profile() {
       </div>
 
       <div className="pt-4">
-        <Button variant="outline" className="w-full h-16 rounded-2xl bg-surface-container-low border-none font-bold text-on-surface" onClick={() => navigate("/")}>
+        <Button
+          variant="outline"
+          className="w-full h-16 rounded-2xl bg-surface-container-low border-none font-bold text-on-surface"
+          onClick={handleLogout}
+        >
           <LogOut className="mr-3 text-error" size={20} /> Logout
         </Button>
       </div>

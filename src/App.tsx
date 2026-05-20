@@ -6,7 +6,6 @@ import Splash from "./pages/Splash";
 import RoleSelection from "./pages/RoleSelection";
 import Auth from "./pages/Auth";
 import Verification from "./pages/Verification";
-import Registration from "./pages/Registration";
 import ShopSetup from "./pages/ShopSetup";
 import Welcome from "./pages/Welcome";
 import Dashboard from "./pages/Dashboard";
@@ -27,15 +26,17 @@ function AppRoutes() {
       <Route path="/auth" element={<Auth />} />
       <Route path="/login" element={<Login />} />
       <Route path="/verification" element={<Verification />} />
-      <Route path="/registration" element={<Registration />} />
       <Route path="/shop-setup" element={<ShopSetup />} />
       <Route path="/welcome" element={<Welcome />} />
-      
+
       <Route element={<AppLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/add-product" element={<AddProduct />} />
-        <Route path="/description-assistant" element={<DescriptionAssistant />} />
+        <Route
+          path="/description-assistant"
+          element={<DescriptionAssistant />}
+        />
         <Route path="/profile" element={<Profile />} />
         <Route path="/orders" element={<Orders />} />
       </Route>
