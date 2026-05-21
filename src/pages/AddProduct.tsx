@@ -16,6 +16,7 @@ import { useState, useEffect } from "react";
 import { cn } from "../lib/utils";
 import { db, auth } from "@/src/firebase/firebaseConfig";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { updateDoc, doc } from "firebase/firestore";
 
 export default function AddProduct() {
   const navigate = useNavigate();
@@ -104,6 +105,29 @@ export default function AddProduct() {
         setErrorMessage("");
       }, 3000);
     }
+
+    if (location.state?.editMode) {
+      await updateDoc(doc(db, "products", location.state.product.id), {
+        productName,
+        category,
+        price: Number(price),
+        stock: Number(stock),
+        description,
+        imageUrl: imageBase64,
+      });
+    } else {
+      await addDoc(collection(db, "products"), {
+        sellerId: auth.currentUser?.uid,
+        productName,
+        category,
+        price: Number(price),
+        stock: Number(stock),
+        description,
+        imageUrl: imageBase64,
+        status: "Active",
+        createdAt: serverTimestamp(),
+      });
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,15 +151,16 @@ export default function AddProduct() {
   };
 
   useEffect(() => {
-    if (location.state) {
-      setProductName(location.state.productName || "");
-      setCategory(location.state.category || "");
-      setPrice(location.state.price || "");
-      setStock(location.state.stock || "");
-      setDescription(
-        location.state.generatedDescription || location.state.description || "",
-      );
-      setImages(location.state.images || []);
+    if (location.state?.editMode) {
+      const product = location.state.product;
+
+      setProductName(product.productName || "");
+      setCategory(product.category || "");
+      setPrice(product.price?.toString() || "");
+      setStock(product.stock?.toString() || "");
+      setDescription(product.description || "");
+      setImages(product.imageUrl ? [product.imageUrl] : []);
+      setImageBase64(product.imageUrl || "");
     }
   }, [location.state]);
   return (
