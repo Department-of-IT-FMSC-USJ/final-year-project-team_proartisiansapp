@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Camera,
@@ -12,8 +12,10 @@ import { Button } from "@/src/components/Button";
 import { Input } from "@/src/components/Input";
 import { Select } from "@/src/components/Select";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "../lib/utils";
+import { db, auth } from "@/src/firebase/firebaseConfig";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function AddProduct() {
   const navigate = useNavigate();
@@ -25,6 +27,8 @@ export default function AddProduct() {
   const [description, setDescription] = useState("");
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const location = useLocation();
+  const [imageBase64, setImageBase64] = useState("");
 
   const handleSaveProduct = async () => {
     setErrorMessage("");
@@ -67,18 +71,73 @@ export default function AddProduct() {
       return;
     }
 
-    console.log("Saving...");
+    try {
+      await addDoc(collection(db, "products"), {
+        productName,
+        category,
+        price: Number(price),
+        stock: Number(stock),
+        description,
+        imageUrl: imageBase64,
+        createdAt: serverTimestamp(),
+        sellerId: auth.currentUser?.uid,
+      });
+
+      setErrorMessage("✅ Product posted successfully!");
+
+      setProductName("");
+      setCategory("");
+      setPrice("");
+      setStock("");
+      setDescription("");
+      setImages([]);
+      setImageBase64("");
+
+      setTimeout(() => {
+        setErrorMessage("");
+        navigate("/inventory");
+      }, 2000);
+    } catch (error) {
+      setErrorMessage("❌ Failed to save product.");
+
+      setTimeout(() => {
+        setErrorMessage("");
+      }, 3000);
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
 
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setImages([imageUrl]);
-    }
+    if (!file) return;
+
+    // Preview image in UI
+    const previewUrl = URL.createObjectURL(file);
+    setImages([previewUrl]);
+
+    // Convert image to Base64
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setImageBase64(base64String);
+    };
+
+    reader.readAsDataURL(file);
   };
 
+  useEffect(() => {
+    if (location.state) {
+      setProductName(location.state.productName || "");
+      setCategory(location.state.category || "");
+      setPrice(location.state.price || "");
+      setStock(location.state.stock || "");
+      setDescription(
+        location.state.generatedDescription || location.state.description || "",
+      );
+      setImages(location.state.images || []);
+    }
+  }, [location.state]);
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-surface max-w-md mx-auto overflow-x-hidden">
       <header className="flex items-center p-4 bg-white border-b border-primary-container/10 sticky top-0 z-30">
@@ -221,7 +280,18 @@ export default function AddProduct() {
             <Button
               variant="secondary"
               className="w-full text-xs gap-2 border border-primary-container/20"
-              onClick={() => navigate("/description-assistant")}
+              onClick={() =>
+                navigate("/description-assistant", {
+                  state: {
+                    productName,
+                    category,
+                    price,
+                    stock,
+                    description,
+                    images,
+                  },
+                })
+              }
             >
               <Sparkles size={16} /> Create Description with AI
             </Button>
@@ -233,9 +303,12 @@ export default function AddProduct() {
 
           <div className="space-y-2 opacity-60">
             <p className="text-on-surface text-sm font-semibold">Description</p>
-            <div className="min-h-[120px] rounded-2xl border border-outline-variant/30 bg-surface-container-low p-4 italic text-xs text-outline leading-relaxed">
-              The AI-generated description will appear here...
-            </div>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full rounded-2xl border border-outline-variant/30 bg-surface-container-low p-4 text-sm outline-none min-h-[120px]"
+              placeholder="AI-generated description will appear here..."
+            />
           </div>
         </div>
       </main>
