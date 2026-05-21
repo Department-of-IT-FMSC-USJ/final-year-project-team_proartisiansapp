@@ -6,6 +6,7 @@ import { Button } from "./Button";
 import { useEffect, useState } from "react";
 import { auth, db } from "@/src/firebase/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
+import { signOut } from "firebase/auth";
 
 // Custom icons based on design
 const NavIcon = ({ icon: Icon, active }: { icon: any; active: boolean }) => (
@@ -26,7 +27,15 @@ export const AppLayout = () => {
     location: "",
     photoURL: "",
   });
-
+  const handleLogout = async () => {
+    try {
+      setIsMenuOpen(false);
+      await signOut(auth);
+      navigate("/");
+    } catch (error) {
+      console.log("Logout failed");
+    }
+  };
   const navItems = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/inventory", label: "Inventory", icon: PackageIcon },
@@ -235,6 +244,7 @@ export const AppLayout = () => {
                 <Button
                   variant="outline"
                   className="w-full h-14 rounded-2xl bg-surface-container-low border-none font-bold text-on-surface"
+                  onClick={handleLogout}
                 >
                   <LogOut className="mr-3 text-error" size={20} /> Logout
                 </Button>
