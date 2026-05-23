@@ -152,6 +152,7 @@ export default function AddProduct() {
 
   useEffect(() => {
     if (location.state?.editMode) {
+      // EDIT PRODUCT
       const product = location.state.product;
 
       setProductName(product.productName || "");
@@ -161,6 +162,16 @@ export default function AddProduct() {
       setDescription(product.description || "");
       setImages(product.imageUrl ? [product.imageUrl] : []);
       setImageBase64(product.imageUrl || "");
+    } else if (location.state) {
+      // RETURNING FROM AI DESCRIPTION PAGE
+      setProductName(location.state.productName || "");
+      setCategory(location.state.category || "");
+      setPrice(location.state.price || "");
+      setStock(location.state.stock || "");
+      setDescription(
+        location.state.generatedDescription || location.state.description || "",
+      );
+      setImages(location.state.images || []);
     }
   }, [location.state]);
   return (
