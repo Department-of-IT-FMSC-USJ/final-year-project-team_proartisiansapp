@@ -21,6 +21,8 @@ export default function Inventory() {
   const [products, setProducts] = useState<any[]>([]);
   const [soldProducts, setSoldProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
 
   // FETCH DATA
   useEffect(() => {
@@ -128,11 +130,16 @@ export default function Inventory() {
   };
 
   // DELETE PRODUCT
-  const handleDelete = async (productId: string) => {
-    try {
-      await deleteDoc(doc(db, "products", productId));
+  const handleDelete = async () => {
+    if (!productToDelete) return;
 
-      setProducts((prev) => prev.filter((p) => p.id !== productId));
+    try {
+      await deleteDoc(doc(db, "products", productToDelete));
+
+      setProducts((prev) => prev.filter((p) => p.id !== productToDelete));
+
+      setShowDeleteModal(false);
+      setProductToDelete(null);
     } catch (error) {
       console.error("Error deleting product:", error);
     }
@@ -195,6 +202,38 @@ export default function Inventory() {
           ))}
         </div>
       </header>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-6">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl space-y-5">
+            <h3 className="text-lg font-black text-center">Delete Product?</h3>
+
+            <p className="text-sm text-outline text-center">
+              Are you sure you want to delete this product? This action cannot
+              be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setProductToDelete(null);
+                }}
+                className="flex-1 h-12 rounded-2xl bg-surface-container text-on-surface font-bold"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="flex-1 h-12 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 p-4 space-y-4">
         {loading && (
@@ -294,8 +333,10 @@ export default function Inventory() {
                       </button>
 
                       <button
-                        onClick={() => handleDelete(product.id)}
-                        className="size-10 flex items-center justify-center bg-error-container/10 text-error rounded-xl hover:bg-error-container/20 transition-colors"
+                        onClick={() => {
+                          setProductToDelete(product.id);
+                          setShowDeleteModal(true);
+                        }}
                       >
                         <Trash2 size={16} />
                       </button>

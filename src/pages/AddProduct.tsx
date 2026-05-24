@@ -69,20 +69,35 @@ export default function AddProduct() {
         setErrorMessage("");
         setMissingFields([]);
       }, 3000);
+
       return;
     }
 
     try {
-      await addDoc(collection(db, "products"), {
-        productName,
-        category,
-        price: Number(price),
-        stock: Number(stock),
-        description,
-        imageUrl: imageBase64,
-        createdAt: serverTimestamp(),
-        sellerId: auth.currentUser?.uid,
-      });
+      if (location.state?.editMode) {
+        // EDIT EXISTING PRODUCT
+        await updateDoc(doc(db, "products", location.state.product.id), {
+          productName,
+          category,
+          price: Number(price),
+          stock: Number(stock),
+          description,
+          imageUrl: imageBase64,
+        });
+      } else {
+        // ADD NEW PRODUCT (ONLY ONCE)
+        await addDoc(collection(db, "products"), {
+          sellerId: auth.currentUser?.uid,
+          productName,
+          category,
+          price: Number(price),
+          stock: Number(stock),
+          description,
+          imageUrl: imageBase64,
+          status: "Active",
+          createdAt: serverTimestamp(),
+        });
+      }
 
       setErrorMessage("✅ Product posted successfully!");
 
@@ -105,29 +120,6 @@ export default function AddProduct() {
         setErrorMessage("");
       }, 3000);
     }
-
-    if (location.state?.editMode) {
-      await updateDoc(doc(db, "products", location.state.product.id), {
-        productName,
-        category,
-        price: Number(price),
-        stock: Number(stock),
-        description,
-        imageUrl: imageBase64,
-      });
-    } else {
-      await addDoc(collection(db, "products"), {
-        sellerId: auth.currentUser?.uid,
-        productName,
-        category,
-        price: Number(price),
-        stock: Number(stock),
-        description,
-        imageUrl: imageBase64,
-        status: "Active",
-        createdAt: serverTimestamp(),
-      });
-    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,11 +127,11 @@ export default function AddProduct() {
 
     if (!file) return;
 
-    // Preview image in UI
+    // Preview image
     const previewUrl = URL.createObjectURL(file);
     setImages([previewUrl]);
 
-    // Convert image to Base64
+    // Convert to base64 for Firestore
     const reader = new FileReader();
 
     reader.onloadend = () => {
