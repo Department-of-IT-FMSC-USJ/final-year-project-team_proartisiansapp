@@ -1,22 +1,71 @@
 import { GoogleGenAI } from "@google/genai";
 
-let genAI: GoogleGenAI | null = null;
+const genAI = new GoogleGenAI({
+  apiKey: "AIzaSyDAM5wSmQ2fLFQPNZhBwtaSDZqmIHKHIVA",
+});
 
-export function getGenAI() {
-  if (!genAI) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is required to use AI features.");
-    }
-    genAI = new GoogleGenAI(apiKey);
-  }
-  return genAI;
+export async function generateProductDescription(
+  productName: string,
+  category: string,
+  details: string
+) {
+  const prompt = `
+Generate product content in EXACT JSON format.
+
+{
+  "productTitle": "",
+  "shortDescription": "",
+  "fullDescription": "",
+  "keyFeatures": [],
+  "seoTags": []
 }
 
-export async function generateProductDescription(productName: string, category: string, details: string) {
-  const model = getGenAI().getGenerativeModel({ model: "gemini-1.5-flash" });
-  const prompt = `Write a compelling, professional artisan marketplace product description for a ${category} item named "${productName}". Additional details provided: ${details}. Keep it concise, engaging, and highlight the handcrafted quality.`;
-  
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+Product name: ${productName}
+Category: ${category}
+Details: ${details}
+
+Return ONLY valid JSON. No explanations.
+`;
+
+  const response = await genAI.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: prompt,
+  });
+
+  return response.text;
+}
+
+export async function buyerChat(
+  userMessage: string,
+  history: { role: string; text: string }[] = []
+) {
+  const conversationHistory = history
+    .map((msg) => `${msg.role}: ${msg.text}`)
+    .join("\n");
+
+  const prompt = `
+You are an AI shopping assistant for Pro-Artisan Marketplace.
+
+Your job:
+- Help buyers find handmade artisan products
+- Suggest gift ideas
+- Explain custom orders
+- Help with seller communication
+- Answer shopping questions
+
+Conversation history:
+${conversationHistory}
+
+Buyer message:
+${userMessage}
+
+Respond in a friendly, helpful, concise way.
+`;
+
+  const response = await genAI.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: prompt,
+  });
+
+  return response.text || "Sorry, I couldn't generate a response.";
 }

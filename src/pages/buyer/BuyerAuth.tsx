@@ -1,27 +1,57 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Mail, Phone, LockKeyhole, MapPin } from "lucide-react";
-
+import { ArrowLeft, Mail, Phone, LockKeyhole } from "lucide-react";
 import { Button } from "@/src/components/Button";
 import { Input } from "@/src/components/Input";
 import { registerUser, signInWithGoogle } from "@/src/services/authService";
-import { useUser } from "@/src/context/UserContext";
 
-export default function Auth() {
+export default function BuyerAuth() {
   const navigate = useNavigate();
-  const { setIsAuthenticated } = useUser();
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-
-  const [sellerName, setSellerName] = useState("");
+  const [buyerName, setBuyerName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
     setErrorMessage("");
+
+    // Name validation
+    if (!buyerName.trim()) {
+      setErrorMessage("❌ Full name is required");
+      return;
+    }
+
+    // Email validation
+    if (!email.trim()) {
+      setErrorMessage("❌ Email is required");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setErrorMessage("❌ Enter a valid email address");
+      return;
+    }
+
+    // Phone validation
+    if (!phone.trim()) {
+      setErrorMessage("❌ Phone number is required");
+      return;
+    }
+
+    if (!/^\d{9}$/.test(phone)) {
+      setErrorMessage("❌ Enter a valid Sri Lankan phone number");
+      return;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      setErrorMessage("❌ Password must be at least 6 characters");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setErrorMessage("❌ Passwords do not match");
@@ -31,35 +61,33 @@ export default function Auth() {
     try {
       setLoading(true);
 
-      await registerUser(sellerName, email, password, "seller");
-      setIsAuthenticated(true);
-      navigate("/shop-setup", {
-        state: {
-          successMessage: "✅ Seller account created successfully!",
-        },
+      await registerUser(buyerName, email, password, "buyer", phone);
+
+      navigate("/buyer/dashboard", {
+        state: { successMessage: "✅ Buyer account created successfully!" },
       });
     } catch (error: any) {
-      setErrorMessage(error.message);
+      if (error.code === "auth/email-already-in-use") {
+        setErrorMessage("❌ Email already in use");
+      } else if (error.code === "auth/weak-password") {
+        setErrorMessage("❌ Password is too weak");
+      } else {
+        setErrorMessage("❌ " + error.message);
+      }
     } finally {
       setLoading(false);
     }
   };
+
   const handleGoogleRegister = async () => {
     setErrorMessage("");
-
     try {
       setLoading(true);
-
-      await signInWithGoogle();
-
-      setIsAuthenticated(true);
-
-      navigate("/shop-setup", {
-        state: {
-          successMessage: "✅ Google registration successful!",
-        },
+      await signInWithGoogle("buyer");
+      navigate("/buyer/dashboard", {
+        state: { successMessage: "✅ Google registration successful!" },
       });
-    } catch (error: any) {
+    } catch {
       setErrorMessage("❌ Google registration failed. Try again.");
     } finally {
       setLoading(false);
@@ -81,29 +109,27 @@ export default function Auth() {
       </header>
 
       {errorMessage && (
-        <div className="mb-6 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium">
-          ❌ {errorMessage}
+        <div className="mx-6 mb-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium">
+          {errorMessage}
         </div>
       )}
 
       <div className="flex flex-col px-6 pt-10 flex-1">
         <h1 className="text-on-surface tracking-tight text-[32px] font-bold leading-tight pb-3">
-          Join as a Seller
+          Join as a Buyer
         </h1>
-
         <p className="text-on-surface-variant text-base font-normal leading-normal pb-8">
-          Create your artisan store and start selling today.
+          Create your account and start discovering handmade artisan products.
         </p>
 
         <div className="flex flex-col gap-6 pb-6">
           <Input
-            label="Seller Name"
+            label="Full Name"
             placeholder="Enter your full name"
             required
-            value={sellerName}
-            onChange={(e) => setSellerName(e.target.value)}
+            value={buyerName}
+            onChange={(e) => setBuyerName(e.target.value)}
           />
-
           <Input
             label="Email Address"
             placeholder="Enter your email"
@@ -113,7 +139,6 @@ export default function Auth() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-
           <Input
             label="Phone Number"
             placeholder="771234567"
@@ -127,7 +152,6 @@ export default function Auth() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
-
           <Input
             label="Password"
             placeholder="Enter password"
@@ -137,7 +161,6 @@ export default function Auth() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-
           <Input
             label="Confirm Password"
             placeholder="Confirm password"
@@ -154,7 +177,7 @@ export default function Auth() {
             className="w-full h-16 rounded-2xl text-lg"
             onClick={handleRegister}
           >
-            {loading ? "Creating Account..." : "Create Seller Account"}
+            {loading ? "Creating Account..." : "Create Buyer Account"}
           </Button>
         </div>
 
@@ -184,10 +207,10 @@ export default function Auth() {
 
       <div className="mt-auto p-6 text-center">
         <p className="text-xs text-outline font-medium">
-          Already have an account?
+          Already have an account?{" "}
           <button
-            className="text-primary-container font-black ml-1 hover:underline underline-offset-4"
-            onClick={() => navigate("/login")}
+            className="text-primary-container font-black hover:underline underline-offset-4"
+            onClick={() => navigate("/buyer/login")}
           >
             Log in
           </button>

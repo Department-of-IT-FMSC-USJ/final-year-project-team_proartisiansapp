@@ -1,18 +1,26 @@
 import { auth, db } from "../firebase/firebaseConfig";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-
 import {
+  GoogleAuthProvider,
+  signInWithPopup,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 
-import { doc, setDoc } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  getDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 
+
+// REGISTER USER
 export const registerUser = async (
   name: string,
   email: string,
   password: string,
-  role: string = "seller"
+  role: "buyer" | "seller",
+  phone: string = ""
 ) => {
   const userCredential = await createUserWithEmailAndPassword(
     auth,
@@ -26,13 +34,17 @@ export const registerUser = async (
     uid: user.uid,
     name,
     email,
+    phone,
     role,
-    createdAt: new Date(),
+    provider: "email",
+    createdAt: serverTimestamp(),
   });
 
   return user;
 };
 
+
+// LOGIN USER
 export const loginUser = async (
   email: string,
   password: string
@@ -46,24 +58,32 @@ export const loginUser = async (
   return userCredential.user;
 };
 
-export const signInWithGoogle = async () => {
+
+// GOOGLE SIGN IN
+export const signInWithGoogle = async (
+  role: "buyer" | "seller"
+) => {
   const provider = new GoogleAuthProvider();
 
   const result = await signInWithPopup(auth, provider);
 
   const user = result.user;
 
-  await setDoc(
-    doc(db, "users", user.uid),
-    {
+  const userRef = doc(db, "users", user.uid);
+  const existingUser = await getDoc(userRef);
+
+  // Save only if first time
+  if (!existingUser.exists()) {
+    await setDoc(userRef, {
       uid: user.uid,
-      name: user.displayName,
-      email: user.email,
-      role: "seller",
-      createdAt: new Date(),
-    },
-    { merge: true }
-  );
+      name: user.displayName || "",
+      email: user.email || "",
+      phone: user.phoneNumber || "",
+      role,
+      provider: "google",
+      createdAt: serverTimestamp(),
+    });
+  }
 
   return user;
 };

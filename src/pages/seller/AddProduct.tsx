@@ -13,7 +13,7 @@ import { Input } from "@/src/components/Input";
 import { Select } from "@/src/components/Select";
 import { motion } from "motion/react";
 import { useState, useEffect } from "react";
-import { cn } from "../lib/utils";
+import { cn } from "@/src/lib/utils";
 import { db, auth } from "@/src/firebase/firebaseConfig";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { updateDoc, doc } from "firebase/firestore";
