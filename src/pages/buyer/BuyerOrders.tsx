@@ -91,7 +91,6 @@ export default function BuyerOrders() {
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-6 pb-24">
-      {" "}
       <header>
         <button
           onClick={() => navigate(-1)}

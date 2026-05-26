@@ -1,6 +1,14 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ShoppingBag, Heart, Sparkles, Bell, ChevronRight } from "lucide-react";
+import {
+  ShoppingBag,
+  Heart,
+  Sparkles,
+  Bell,
+  ChevronRight,
+  Search,
+  MessageCircle,
+} from "lucide-react";
 import BuyerSidebar from "../../components/BuyerSidebar";
 
 export default function BuyerDashboard() {
@@ -46,13 +54,24 @@ export default function BuyerDashboard() {
           </div>
         </div>
 
-        {/* Notifications */}
-        <button
-          onClick={() => navigate("/buyer/notifications")}
-          className="size-12 rounded-2xl bg-white border border-outline-variant/20 flex items-center justify-center shadow-soft"
-        >
-          <Bell size={20} />
-        </button>
+        {/* Right Side */}
+        <div className="flex items-center gap-2">
+          {/* Chat */}
+          <button
+            onClick={() => navigate("/chat")}
+            className="size-11 rounded-2xl bg-white border border-outline-variant/20 flex items-center justify-center shadow-soft"
+          >
+            <MessageCircle size={18} />
+          </button>
+
+          {/* Notifications */}
+          <button
+            onClick={() => navigate("/buyer/notifications")}
+            className="size-11 rounded-2xl bg-white border border-outline-variant/20 flex items-center justify-center shadow-soft"
+          >
+            <Bell size={18} />
+          </button>
+        </div>
       </header>
 
       {/* KPI Cards */}
@@ -82,6 +101,22 @@ export default function BuyerDashboard() {
             <p className="text-sm text-outline font-medium">Wishlist Items</p>
           </div>
         </button>
+      </section>
+
+      {/* Search Bar */}
+      <section className="px-4 pt-4">
+        <div className="relative">
+          <Search
+            size={18}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-outline"
+          />
+
+          <input
+            type="text"
+            placeholder="Search product categories..."
+            className="w-full h-14 pl-12 pr-4 rounded-2xl bg-white border border-outline-variant/20 shadow-soft text-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container"
+          />
+        </div>
       </section>
 
       {/* Orders Summary */}

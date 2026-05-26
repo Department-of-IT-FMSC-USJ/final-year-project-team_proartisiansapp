@@ -195,18 +195,18 @@ export const AppLayout = () => {
                 <SideNavItem
                   icon={LayoutDashboard}
                   label="Dashboard"
-                  active={location.pathname === "/dashboard"}
+                  active={location.pathname === "/seller/dashboard"}
                   onClick={() => {
-                    navigate("/dashboard");
+                    navigate("/seller/dashboard");
                     setIsMenuOpen(false);
                   }}
                 />
                 <SideNavItem
                   icon={PackageIcon}
                   label="My Inventory"
-                  active={location.pathname === "/inventory"}
+                  active={location.pathname === "/seller/inventory"}
                   onClick={() => {
-                    navigate("/inventory");
+                    navigate("/seller/inventory");
                     setIsMenuOpen(false);
                   }}
                 />
@@ -214,18 +214,18 @@ export const AppLayout = () => {
                   icon={ShoppingBag}
                   label="Orders"
                   badge="3"
-                  active={location.pathname === "/orders"}
+                  active={location.pathname === "/seller/orders"}
                   onClick={() => {
-                    navigate("/orders");
+                    navigate("/seller/orders");
                     setIsMenuOpen(false);
                   }}
                 />
                 <SideNavItem
                   icon={User}
                   label="Profile"
-                  active={location.pathname === "/profile"}
+                  active={location.pathname === "/seller/profile"}
                   onClick={() => {
-                    navigate("/profile");
+                    navigate("/seller/profile");
                     setIsMenuOpen(false);
                   }}
                 />

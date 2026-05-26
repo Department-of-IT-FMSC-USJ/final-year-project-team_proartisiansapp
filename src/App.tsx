@@ -27,6 +27,11 @@ import EditProfileView from "./pages/buyer/EditProfileView";
 import NotificationsView from "./pages/buyer/NotificationsView";
 import SettingsView from "./pages/buyer/SettingsView";
 import SupportView from "./pages/buyer/SupportView";
+import Marketplace from "./pages/buyer/Marketplace";
+import ProductDetails from "./pages/buyer/ProductDetails";
+
+import ChatRoom from "./pages/chat/ChatRoom";
+import ChatList from "./pages/chat/ChatList";
 
 function AppRoutes() {
   const { isAuthenticated } = useUser();
@@ -37,10 +42,8 @@ function AppRoutes() {
       <Route path="/select-role" element={<RoleSelection />} />
       <Route path="seller/auth" element={<Auth />} />
       <Route path="seller/login" element={<Login />} />
-
       <Route path="seller/shop-setup" element={<ShopSetup />} />
       <Route path="/welcome" element={<Welcome />} />
-
       <Route element={<AppLayout />}>
         <Route path="seller/dashboard" element={<Dashboard />} />
         <Route path="seller/inventory" element={<Inventory />} />
@@ -52,9 +55,7 @@ function AppRoutes() {
         <Route path="seller/profile" element={<Profile />} />
         <Route path="seller/orders" element={<Orders />} />
       </Route>
-
       <Route path="*" element={<Navigate to="/" replace />} />
-
       <Route path="/buyer/login" element={<BuyerLogin />} />
       <Route path="/buyer/auth" element={<BuyerAuth />} />
       <Route path="/buyer/assistant" element={<BuyerAssistant />} />
@@ -67,6 +68,10 @@ function AppRoutes() {
       <Route path="/buyer/notifications" element={<NotificationsView />} />
       <Route path="/buyer/settings" element={<SettingsView />} />
       <Route path="/buyer/support" element={<SupportView />} />
+      <Route path="/buyer/marketplace" element={<Marketplace />} />
+      <Route path="/buyer/product/:id" element={<ProductDetails />} />
+      <Route path="/chat/:id" element={<ChatRoom />} />
+      <Route path="/chat" element={<ChatList />} />
     </Routes>
   );
 }
