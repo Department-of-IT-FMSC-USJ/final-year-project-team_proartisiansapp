@@ -41,6 +41,7 @@ export default function AddProduct() {
     if (!category) missing.push("category");
     if (!price) missing.push("price");
     if (!stock) missing.push("stock");
+    if (!description.trim()) missing.push("description");
     if (images.length === 0) missing.push("photo");
 
     if (missing.length > 0) {
@@ -58,6 +59,8 @@ export default function AddProduct() {
             return "Stock Quantity";
           case "photo":
             return "Product Photo";
+          case "description":
+            return "Description";
           default:
             return field;
         }
@@ -88,6 +91,7 @@ export default function AddProduct() {
         // ADD NEW PRODUCT (ONLY ONCE)
         await addDoc(collection(db, "products"), {
           sellerId: auth.currentUser?.uid,
+          sellerName: auth.currentUser?.displayName || "Artisan",
           productName,
           category,
           price: Number(price),
@@ -334,7 +338,12 @@ export default function AddProduct() {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-2xl border border-outline-variant/30 bg-surface-container-low p-4 text-sm outline-none min-h-[120px]"
+              className={cn(
+                "w-full rounded-2xl bg-surface-container-low p-4 text-sm outline-none min-h-[120px]",
+                missingFields.includes("description")
+                  ? "border border-red-500"
+                  : "border border-outline-variant/30",
+              )}
               placeholder="AI-generated description will appear here..."
             />
           </div>

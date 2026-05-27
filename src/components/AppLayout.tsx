@@ -1,5 +1,12 @@
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ShoppingBag, User, Menu, Bell } from "lucide-react";
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  User,
+  Menu,
+  Bell,
+  MessageCircle,
+} from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "./Button";
@@ -97,10 +104,18 @@ export const AppLayout = () => {
               </p>
             </div>
           </div>
-          <button className="relative size-10 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant">
-            <Bell size={20} />
-            <span className="absolute top-2.5 right-2.5 size-2 bg-primary-container rounded-full border border-white"></span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/seller/inbox")}
+              className="size-11 rounded-2xl bg-white border border-outline-variant/20 flex items-center justify-center shadow-soft"
+            >
+              <MessageCircle size={18} />
+            </button>
+            <button className="relative size-10 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant">
+              <Bell size={20} />
+              <span className="absolute top-2.5 right-2.5 size-2 bg-primary-container rounded-full border border-white"></span>
+            </button>
+          </div>
         </header>
       )}
 

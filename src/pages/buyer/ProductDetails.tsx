@@ -6,16 +6,55 @@ import {
   ShoppingBag,
   Star,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+
+import { doc, getDoc } from "firebase/firestore";
+
+import { db } from "@/src/firebase/firebaseConfig";
 
 export default function ProductDetails() {
   const navigate = useNavigate();
+  const { id } = useParams();
+
+  const [product, setProduct] = useState<any>(null);
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+
+      try {
+        const docRef = doc(db, "products", id);
+
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          setProduct({
+            id: docSnap.id,
+            ...docSnap.data(),
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch product");
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface max-w-md mx-auto pb-28">
       {/* Image Section */}
       <div className="relative">
         <img
-          src="https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&q=80&w=1200"
+          src={product.imageUrl}
           alt="Product"
           className="w-full h-[340px] object-cover"
         />
@@ -42,15 +81,17 @@ export default function ProductDetails() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-black text-on-surface leading-tight">
-                Handmade Clay Vase
+                {product.productName}
               </h1>
 
-              <p className="text-outline mt-2 text-sm">by Julian Crafts</p>
+              <p className="text-outline mt-2 text-sm">
+                by {product.sellerName}
+              </p>
             </div>
 
             <div className="bg-primary-container/10 px-4 py-2 rounded-2xl">
               <span className="text-primary-container font-black text-lg">
-                Rs. 4,500
+                Rs. {product.price}
               </span>
             </div>
           </div>
@@ -69,7 +110,7 @@ export default function ProductDetails() {
 
         {/* Description */}
         <section>
-          <h2 className="text-lg font-black mb-3">Description</h2>
+          <h2 className="text-lg font-black mb-3">{product.description}</h2>
 
           <p className="text-sm leading-7 text-outline">
             This handcrafted clay vase is made by skilled Sri Lankan artisans
@@ -129,7 +170,16 @@ export default function ProductDetails() {
           <MessageCircle size={22} />
         </button>
 
-        <button className="flex-1 h-14 rounded-2xl bg-primary-container text-on-primary-container font-black flex items-center justify-center gap-2 shadow-soft">
+        <button
+          onClick={() =>
+            navigate("/buyer/request-order", {
+              state: {
+                product,
+              },
+            })
+          }
+          className="flex-1 h-14 rounded-2xl bg-primary-container text-on-primary-container font-black flex items-center justify-center gap-2 shadow-soft"
+        >
           <ShoppingBag size={20} />
           Request Order
         </button>

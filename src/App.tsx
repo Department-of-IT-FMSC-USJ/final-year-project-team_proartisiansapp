@@ -14,6 +14,7 @@ import DescriptionAssistant from "./pages/seller/DescriptionAssistant";
 import Profile from "./pages/seller/Profile";
 import Orders from "./pages/seller/Orders";
 import Login from "./pages/seller/Login";
+import SellerInbox from "./pages/seller/SellerINbox";
 
 import BuyerDashboard from "./pages/buyer/BuyerDashboard";
 import BuyerAuth from "./pages/buyer/BuyerAuth";
@@ -29,6 +30,7 @@ import SettingsView from "./pages/buyer/SettingsView";
 import SupportView from "./pages/buyer/SupportView";
 import Marketplace from "./pages/buyer/Marketplace";
 import ProductDetails from "./pages/buyer/ProductDetails";
+import RequestOrder from "./pages/buyer/RequestOrder";
 
 import ChatRoom from "./pages/chat/ChatRoom";
 import ChatList from "./pages/chat/ChatList";
@@ -54,6 +56,7 @@ function AppRoutes() {
         />
         <Route path="seller/profile" element={<Profile />} />
         <Route path="seller/orders" element={<Orders />} />
+        <Route path="seller/inbox" element={<SellerInbox />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
       <Route path="/buyer/login" element={<BuyerLogin />} />
@@ -70,7 +73,8 @@ function AppRoutes() {
       <Route path="/buyer/support" element={<SupportView />} />
       <Route path="/buyer/marketplace" element={<Marketplace />} />
       <Route path="/buyer/product/:id" element={<ProductDetails />} />
-      <Route path="/chat/:id" element={<ChatRoom />} />
+      <Route path="/buyer/request-order" element={<RequestOrder />} />
+      <Route path="/chat/:orderid" element={<ChatRoom />} />
       <Route path="/chat" element={<ChatList />} />
     </Routes>
   );

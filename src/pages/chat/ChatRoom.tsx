@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import { ArrowLeft, SendHorizonal } from "lucide-react";
-
-import { auth } from "@/src/firebase/firebaseConfig";
-
-import { sendMessage, subscribeToMessages } from "../../services/chatServices";
+import { auth, db } from "@/src/firebase/firebaseConfig";
+import { useParams } from "react-router-dom";
+import {
+  addDoc,
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
+} from "firebase/firestore";
 
 interface Message {
   id: string;
@@ -16,28 +21,51 @@ interface Message {
 
 export default function ChatRoom() {
   const navigate = useNavigate();
-
-  const [message, setMessage] = useState("");
+  const { orderId } = useParams();
   const [messages, setMessages] = useState<Message[]>([]);
-
-  const chatId = "test-chat";
+  const [input, setInput] = useState("");
 
   useEffect(() => {
-    const unsubscribe = subscribeToMessages(chatId, (msgs) => {
-      setMessages(msgs);
+    if (!orderId) return;
+
+    const q = query(
+      collection(db, "chats", orderId, "messages"),
+      orderBy("createdAt"),
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedMessages: Message[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+
+        return {
+          id: doc.id,
+          senderId: data.senderId || "",
+          senderRole: data.senderRole || "buyer",
+          text: data.text || "",
+        };
+      });
+
+      setMessages(fetchedMessages);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [orderId]);
 
-  const handleSend = async () => {
-    const user = auth.currentUser;
+  const sendMessage = async () => {
+    if (!input.trim()) return;
 
-    if (!user || !message.trim()) return;
+    try {
+      await addDoc(collection(db, "chats", orderId!, "messages"), {
+        text: input,
+        senderId: auth.currentUser?.uid,
+        senderRole: "buyer",
+        createdAt: serverTimestamp(),
+      });
 
-    await sendMessage(chatId, user.uid, "buyer", message);
-
-    setMessage("");
+      setInput("");
+    } catch (error) {
+      console.error("Failed to send message");
+    }
   };
 
   return (
@@ -92,15 +120,15 @@ export default function ChatRoom() {
       <div className="sticky bottom-0 bg-white border-t border-outline-variant/10 p-4">
         <div className="flex items-center gap-3">
           <input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             type="text"
             placeholder="Type your message..."
             className="flex-1 h-14 px-5 rounded-2xl bg-surface-container-low border border-outline-variant/10 text-sm focus:outline-none focus:ring-2 focus:ring-primary-container"
           />
 
           <button
-            onClick={handleSend}
+            onClick={sendMessage}
             className="size-14 rounded-2xl bg-primary-container text-on-primary-container flex items-center justify-center shadow-soft"
           >
             <SendHorizonal size={20} />

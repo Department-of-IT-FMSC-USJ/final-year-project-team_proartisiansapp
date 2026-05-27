@@ -1,7 +1,11 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/src/lib/utils";
 import { ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { collection, query, where, getDocs } from "firebase/firestore";
+
+import { db, auth } from "@/src/firebase/firebaseConfig";
 
 type OrderStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "REJECTED";
 
@@ -63,31 +67,54 @@ const mockOrders: Order[] = [
   },
 ];
 
-const statusStyles: Record<OrderStatus, string> = {
-  COMPLETED: "bg-emerald-100 text-emerald-700",
-  PENDING: "bg-amber-100 text-amber-700",
-  ACTIVE: "bg-sky-100 text-sky-700",
-  REJECTED: "bg-rose-100 text-rose-700",
+const statusStyles: Record<string, string> = {
+  pending: "bg-amber-100 text-amber-700",
+  completed: "bg-emerald-100 text-emerald-700",
+  cancelled: "bg-rose-100 text-rose-700",
 };
 
-const statusLabels: Record<OrderStatus, string> = {
-  COMPLETED: "Delivered",
-  PENDING: "Processing",
-  ACTIVE: "In Production",
-  REJECTED: "Cancelled",
+const statusLabels: Record<string, string> = {
+  pending: "Processing",
+  completed: "Delivered",
+  cancelled: "Cancelled",
 };
 
 export default function BuyerOrders() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("All");
   const tabs = ["All", "Pending", "Active", "Completed"];
+  const [orders, setOrders] = useState<any[]>([]);
 
   const filtered =
     activeTab === "All"
-      ? mockOrders
-      : mockOrders.filter(
-          (o) => o.status.toLowerCase() === activeTab.toLowerCase(),
+      ? orders
+      : orders.filter(
+          (o) => o.status?.toLowerCase() === activeTab.toLowerCase(),
         );
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const q = query(
+        collection(db, "orders"),
+        where("buyerId", "==", auth.currentUser?.uid),
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      const fetchedOrders = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setOrders(fetchedOrders);
+    } catch (error) {
+      console.error("Failed to fetch buyer orders");
+    }
+  };
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-6 pb-24">
@@ -125,7 +152,7 @@ export default function BuyerOrders() {
           >
             <div className="h-40 w-full relative">
               <img
-                src={order.image}
+                src={order.productImage}
                 alt={order.title}
                 className="w-full h-full object-cover"
               />
@@ -143,7 +170,7 @@ export default function BuyerOrders() {
                   {order.status} • {order.date}
                 </p>
                 <h3 className="text-on-surface text-lg font-black mt-0.5">
-                  {order.title}
+                  {order.productName}
                 </h3>
               </div>
               <div className="flex items-center justify-between">
@@ -151,24 +178,26 @@ export default function BuyerOrders() {
                   <div className="size-6 rounded-full overflow-hidden">
                     <img
                       src={order.artisanAvatar}
-                      alt={order.artisan}
+                      alt={order.sellerName}
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <p className="text-outline text-sm">{order.artisan}</p>
+                  <p className="text-outline text-sm">{order.sellerName}</p>
                 </div>
-                <p className="font-black text-on-surface">{order.price}</p>
+                <p className="font-black text-on-surface">
+                  {order.quantity} item(s)
+                </p>
               </div>
               <button
-                onClick={() => navigate("/buyer/order-details")}
+                onClick={() => navigate(`/chat/${order.id}`)}
                 className={cn(
                   "w-full h-11 rounded-xl text-sm font-black transition-all active:scale-[0.98]",
-                  order.status === "REJECTED"
+                  order.status === "cancelled"
                     ? "bg-surface-container text-outline"
                     : "bg-primary-container text-on-primary-container",
                 )}
               >
-                {order.status === "REJECTED"
+                {order.status === "cancelled"
                   ? "Refund Details"
                   : "View Details"}
               </button>

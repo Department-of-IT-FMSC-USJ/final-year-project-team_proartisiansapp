@@ -1,49 +1,35 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { ArrowLeft, Search, Heart } from "lucide-react";
-
-const products = [
-  {
-    id: 1,
-    name: "Handmade Clay Vase",
-    artisan: "Julian Crafts",
-    price: "Rs. 4,500",
-    image:
-      "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: 2,
-    name: "Wooden Wall Decor",
-    artisan: "WoodWorks LK",
-    price: "Rs. 6,200",
-    image:
-      "https://images.unsplash.com/photo-1581428982868-e410dd047a90?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: 3,
-    name: "Handmade Jewelry",
-    artisan: "Ceylon Gems",
-    price: "Rs. 2,800",
-    image:
-      "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: 4,
-    name: "Traditional Pottery",
-    artisan: "Lanka Pottery",
-    price: "Rs. 3,900",
-    image:
-      "https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&q=80&w=600",
-  },
-];
+import { useEffect, useState } from "react";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/src/firebase/firebaseConfig";
 
 export default function Marketplace() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [products, setProducts] = useState<any[]>([]);
 
   const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(search.toLowerCase()),
+    product.productName.toLowerCase().includes(search.toLowerCase()),
   );
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "products"));
+
+        const fetchedProducts = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setProducts(fetchedProducts);
+      } catch (error) {
+        console.error("Failed to fetch products");
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <div className="min-h-screen bg-surface max-w-md mx-auto pb-24">
@@ -87,8 +73,8 @@ export default function Marketplace() {
             {/* Image */}
             <div className="relative">
               <img
-                src={product.image}
-                alt={product.name}
+                src={product.imageUrl}
+                alt={product.productName}
                 className="w-full h-36 object-cover"
               />
 
@@ -100,17 +86,20 @@ export default function Marketplace() {
             {/* Content */}
             <div className="p-4">
               <h3 className="font-black text-sm text-on-surface line-clamp-1">
-                {product.name}
+                {product.productName}
               </h3>
 
-              <p className="text-xs text-outline mt-1">{product.artisan}</p>
+              <p className="text-xs text-outline mt-1">{product.sellerName}</p>
 
               <div className="flex items-center justify-between mt-4">
                 <p className="text-primary-container font-black text-sm">
-                  {product.price}
+                  Rs. {product.price}
                 </p>
 
-                <button className="px-3 h-9 rounded-xl bg-primary-container text-on-primary-container text-xs font-black">
+                <button
+                  onClick={() => navigate(`/buyer/product/${product.id}`)}
+                  className="px-3 h-9 rounded-xl bg-primary-container text-on-primary-container text-xs font-black"
+                >
                   View
                 </button>
               </div>
