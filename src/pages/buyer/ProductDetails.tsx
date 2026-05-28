@@ -110,42 +110,37 @@ export default function ProductDetails() {
 
         {/* Description */}
         <section>
-          <h2 className="text-lg font-black mb-3">{product.description}</h2>
+          <h2 className="text-lg font-black mb-3">Description</h2>
 
           <p className="text-sm leading-7 text-outline">
-            This handcrafted clay vase is made by skilled Sri Lankan artisans
-            using traditional pottery techniques. Designed for modern and rustic
-            interiors, it adds warmth and authenticity to any space.
+            {product.description}
           </p>
         </section>
 
-        {/* Features */}
+        {/* Product Details */}
         <section>
-          <h2 className="text-lg font-black mb-4">Features</h2>
+          <h2 className="text-lg font-black mb-4">Product Details</h2>
 
           <div className="grid grid-cols-2 gap-3">
+            <FeatureCard label={product.category} />
+            <FeatureCard label={`Stock: ${product.stock}`} />
+            <FeatureCard label={product.status} />
             <FeatureCard label="Handmade" />
-            <FeatureCard label="Eco Friendly" />
-            <FeatureCard label="Customizable" />
-            <FeatureCard label="Clay Material" />
           </div>
         </section>
 
         {/* Artisan Card */}
         <section className="bg-white rounded-3xl p-5 border border-outline-variant/10 shadow-soft">
           <div className="flex items-center gap-4">
-            <img
-              src="https://randomuser.me/api/portraits/men/32.jpg"
-              alt="Artisan"
-              className="w-16 h-16 rounded-2xl object-cover"
-            />
+            <div className="w-16 h-16 rounded-2xl bg-primary-container/20 flex items-center justify-center text-primary-container text-xl font-black">
+              {product.sellerName?.charAt(0)}
+            </div>
 
             <div className="flex-1">
-              <h3 className="font-black text-on-surface">Julian Crafts</h3>
-
-              <p className="text-sm text-outline">
-                Traditional Pottery Artisan
-              </p>
+              <h3 className="font-black text-on-surface">
+                {product.sellerName}
+              </h3>
+              <p className="text-sm text-outline">{product.category} Artisan</p>
 
               <div className="flex items-center gap-2 mt-2">
                 <Star size={14} className="fill-yellow-500 text-yellow-500" />
@@ -164,7 +159,7 @@ export default function ProductDetails() {
       {/* Bottom Buttons */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-outline-variant/10 p-4 flex gap-3">
         <button
-          onClick={() => navigate("/chat/:id")}
+          onClick={() => navigate(`/chat/${product.id}`)}
           className="size-14 rounded-2xl border border-outline-variant/20 flex items-center justify-center"
         >
           <MessageCircle size={22} />

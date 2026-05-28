@@ -2,8 +2,13 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { ArrowLeft, CreditCard, Truck, ShoppingBag } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-
+import {
+  addDoc,
+  collection,
+  serverTimestamp,
+  doc,
+  setDoc,
+} from "firebase/firestore";
 import { db, auth } from "@/src/firebase/firebaseConfig";
 
 export default function RequestOrder() {
@@ -17,12 +22,40 @@ export default function RequestOrder() {
   const [quantity, setQuantity] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "card">("cod");
 
   const handleSubmitOrder = async () => {
     try {
-      await addDoc(collection(db, "orders"), {
+      if (
+        !fullName ||
+        !email ||
+        !phone ||
+        !postalCode ||
+        !quantity ||
+        !address
+      ) {
+        setErrorMessage("Please fill all required fields");
+
+        setTimeout(() => {
+          setErrorMessage("");
+        }, 3000);
+
+        return;
+      }
+
+      if (Number(quantity) > product.stock) {
+        setErrorMessage("Requested quantity exceeds available stock");
+
+        setTimeout(() => {
+          setErrorMessage("");
+        }, 3000);
+
+        return;
+      }
+
+      const orderRef = await addDoc(collection(db, "orders"), {
         buyerId: auth.currentUser?.uid,
         buyerName: fullName,
 
@@ -45,6 +78,25 @@ export default function RequestOrder() {
 
         status: "pending",
 
+        createdAt: serverTimestamp(),
+      });
+
+      // create chat document automatically
+      await setDoc(doc(db, "chats", orderRef.id), {
+        orderId: orderRef.id,
+
+        lastSeenByBuyer: true,
+        lastSeenBySeller: false,
+
+        buyerId: auth.currentUser?.uid,
+        sellerId: product.sellerId,
+        buyerName: fullName,
+        sellerName: product.sellerName,
+
+        participants: [auth.currentUser?.uid, product.sellerId],
+
+        lastMessage: "",
+        lastUpdated: serverTimestamp(),
         createdAt: serverTimestamp(),
       });
 
@@ -73,6 +125,12 @@ export default function RequestOrder() {
           </p>
         </div>
       </header>
+
+      {errorMessage && (
+        <div className="mx-4 mb-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-2xl text-sm font-semibold animate-pulse">
+          {errorMessage}
+        </div>
+      )}
 
       {/* Product */}
       <section className="px-4">

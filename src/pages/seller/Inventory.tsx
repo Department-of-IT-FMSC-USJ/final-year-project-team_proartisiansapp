@@ -173,7 +173,7 @@ export default function Inventory() {
           </div>
 
           <button
-            onClick={() => navigate("/add-product")}
+            onClick={() => navigate("/seller/add-product")}
             className="size-10 flex items-center justify-center rounded-full bg-primary-container/10 text-primary-container hover:bg-primary-container/20 transition-colors"
           >
             <Plus size={24} />

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Search, Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
@@ -6,12 +6,34 @@ import { db } from "@/src/firebase/firebaseConfig";
 
 export default function Marketplace() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [products, setProducts] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const filteredProducts = products.filter((product) =>
-    product.productName.toLowerCase().includes(search.toLowerCase()),
-  );
+  const categories = [
+    "All",
+    "Home & Living",
+    "Jewelry",
+    "Pottery",
+    "Woodwork",
+    "Textiles",
+    "Metalwork",
+    "Paintings",
+    "Handmade Gifts",
+  ];
+
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.productName
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    const matchesCategory =
+      selectedCategory === "All" || product.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -60,6 +82,25 @@ export default function Marketplace() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-14 pl-12 pr-4 rounded-2xl bg-white border border-outline-variant/20 shadow-soft text-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container"
           />
+        </div>
+      </section>
+
+      {/* Categories */}
+      <section className="px-4 pb-5 overflow-x-auto">
+        <div className="flex gap-3">
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-4 h-10 rounded-2xl text-sm font-black whitespace-nowrap transition-all ${
+                selectedCategory === category
+                  ? "bg-primary-container text-on-primary-container"
+                  : "bg-white border border-outline-variant/20 text-on-surface"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
         </div>
       </section>
 

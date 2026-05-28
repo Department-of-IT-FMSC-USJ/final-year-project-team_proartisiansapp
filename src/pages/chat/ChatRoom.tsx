@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, SendHorizonal } from "lucide-react";
+import { ArrowLeft, SendHorizonal, User } from "lucide-react";
 import { auth, db } from "@/src/firebase/firebaseConfig";
 import { useParams } from "react-router-dom";
 import {
@@ -10,6 +10,9 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  doc,
+  getDoc,
+  updateDoc,
 } from "firebase/firestore";
 
 interface Message {
@@ -24,6 +27,9 @@ export default function ChatRoom() {
   const { orderId } = useParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [chatUserName, setChatUserName] = useState("");
+
+  const [currentRole, setCurrentRole] = useState<"buyer" | "seller">("buyer");
 
   useEffect(() => {
     if (!orderId) return;
@@ -55,11 +61,30 @@ export default function ChatRoom() {
     if (!input.trim()) return;
 
     try {
+      const chatRef = doc(db, "chats", orderId!);
+
       await addDoc(collection(db, "chats", orderId!, "messages"), {
         text: input,
+
         senderId: auth.currentUser?.uid,
-        senderRole: "buyer",
+
+        senderRole: currentRole,
+
         createdAt: serverTimestamp(),
+      });
+
+      // update parent chat
+      await updateDoc(chatRef, {
+        lastMessage: input,
+
+        lastSenderId: auth.currentUser?.uid,
+
+        lastSenderRole: currentRole,
+
+        lastUpdated: serverTimestamp(),
+
+        lastSeenByBuyer: currentRole === "buyer",
+        lastSeenBySeller: currentRole === "seller",
       });
 
       setInput("");
@@ -67,6 +92,57 @@ export default function ChatRoom() {
       console.error("Failed to send message");
     }
   };
+
+  useEffect(() => {
+    const fetchOrderInfo = async () => {
+      if (!orderId) return;
+
+      try {
+        const orderRef = doc(db, "orders", orderId);
+
+        const orderSnap = await getDoc(orderRef);
+
+        if (!orderSnap.exists()) return;
+
+        const orderData = orderSnap.data();
+
+        const currentUserId = auth.currentUser?.uid;
+
+        if (currentUserId === orderData.buyerId) {
+          setCurrentRole("buyer");
+
+          setChatUserName(orderData.sellerName);
+        } else {
+          setCurrentRole("seller");
+
+          setChatUserName(orderData.buyerName);
+        }
+      } catch (error) {
+        console.error("Failed to fetch order info");
+      }
+    };
+
+    fetchOrderInfo();
+  }, [orderId]);
+
+  useEffect(() => {
+    const markChatAsRead = async () => {
+      if (!orderId) return;
+
+      try {
+        const chatRef = doc(db, "chats", orderId);
+
+        await updateDoc(chatRef, {
+          lastSeenByBuyer: currentRole === "buyer",
+          lastSeenBySeller: currentRole === "seller",
+        });
+      } catch (error) {
+        console.error("Failed to mark chat as read");
+      }
+    };
+
+    markChatAsRead();
+  }, [orderId, currentRole]);
 
   return (
     <div className="flex flex-col min-h-screen bg-surface max-w-md mx-auto">
@@ -86,9 +162,11 @@ export default function ChatRoom() {
         />
 
         <div>
-          <h2 className="font-black">Julian Crafts</h2>
+          <h2 className="font-black">{chatUserName}</h2>
 
-          <p className="text-xs text-outline">Online</p>
+          <p className="text-xs text-outline">
+            {currentRole === "buyer" ? "Seller" : "Buyer"}
+          </p>
         </div>
       </header>
 

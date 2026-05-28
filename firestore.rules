@@ -1,0 +1,86 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================
+    // ORDERS
+    // =========================
+    match /orders/{orderId} {
+
+      // buyer or seller can read
+      allow read: if request.auth != null &&
+        (
+          request.auth.uid == resource.data.buyerId ||
+          request.auth.uid == resource.data.sellerId
+        );
+
+      // authenticated users can create
+      allow create: if request.auth != null;
+
+      // only seller can update order
+      allow update: if request.auth != null &&
+        request.auth.uid == resource.data.sellerId;
+
+      // no deleting orders
+      allow delete: if false;
+    }
+    
+
+    // =========================
+// PRODUCTS
+// =========================
+match /products/{productId} {
+
+  // anyone logged in can read
+  allow read: if request.auth != null;
+
+  // authenticated sellers can create
+  allow create: if request.auth != null;
+
+  // only product owner can update/delete
+  allow update, delete: if request.auth != null &&
+    request.auth.uid == resource.data.sellerId;
+}
+
+    // =========================
+    // CHATS
+    // =========================
+    match /chats/{chatId} {
+
+      // only participants can read chat
+      allow read: if request.auth != null &&
+        request.auth.uid in resource.data.participants;
+
+      // authenticated users can create
+      allow create: if request.auth != null;
+
+      // only participants can update
+      allow update: if request.auth != null &&
+        request.auth.uid in resource.data.participants;
+
+      allow delete: if false;
+
+      // =========================
+      // MESSAGES
+      // =========================
+      match /messages/{messageId} {
+
+        // only participants can read
+        allow read: if request.auth != null &&
+          request.auth.uid in get(
+            /databases/$(database)/documents/chats/$(chatId)
+          ).data.participants;
+
+        // only participants can send
+        allow create: if request.auth != null &&
+          request.auth.uid in get(
+            /databases/$(database)/documents/chats/$(chatId)
+          ).data.participants;
+
+        // no editing/deleting messages
+        allow update, delete: if false;
+      }
+    }
+  }
+}

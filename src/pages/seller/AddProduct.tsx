@@ -115,7 +115,7 @@ export default function AddProduct() {
 
       setTimeout(() => {
         setErrorMessage("");
-        navigate("/inventory");
+        navigate("/seller/inventory");
       }, 2000);
     } catch (error) {
       setErrorMessage("❌ Failed to save product.");
@@ -288,6 +288,11 @@ export default function AddProduct() {
             <option>Home & Living</option>
             <option>Jewelry</option>
             <option>Pottery</option>
+            <option>Woodwork</option>
+            <option>Textiles</option>
+            <option>Metalwork</option>
+            <option>Paintings</option>
+            <option>Handmade Gifts</option>
           </Select>
 
           <Input

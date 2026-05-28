@@ -10,6 +10,8 @@ import {
   MessageCircle,
 } from "lucide-react";
 import BuyerSidebar from "../../components/BuyerSidebar";
+import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { db, auth } from "@/src/firebase/firebaseConfig";
 
 export default function BuyerDashboard() {
   const navigate = useNavigate();
@@ -18,6 +20,10 @@ export default function BuyerDashboard() {
   const [successMessage, setSuccessMessage] = useState(
     location.state?.successMessage || "",
   );
+  const [search, setSearch] = useState("");
+  const [recommendedProducts, setRecommendedProducts] = useState<any[]>([]);
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+  const [currentOrder, setCurrentOrder] = useState<any | null>(null);
 
   useEffect(() => {
     if (successMessage) {
@@ -25,6 +31,80 @@ export default function BuyerDashboard() {
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
+
+  useEffect(() => {
+    const fetchRecommendedProducts = async () => {
+      try {
+        const q = query(collection(db, "products"), limit(4));
+
+        const querySnapshot = await getDocs(q);
+
+        const fetchedProducts = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setRecommendedProducts(fetchedProducts);
+      } catch (error) {
+        console.error("Failed to fetch products");
+      }
+    };
+
+    fetchRecommendedProducts();
+  }, []);
+
+  useEffect(() => {
+    const fetchPendingOrders = async () => {
+      try {
+        const q = query(
+          collection(db, "orders"),
+          where("buyerId", "==", auth.currentUser?.uid),
+          where("status", "==", "pending"),
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        setPendingOrdersCount(querySnapshot.size);
+      } catch (error) {
+        console.error("Failed to fetch pending orders");
+      }
+    };
+
+    fetchPendingOrders();
+  }, []);
+
+  useEffect(() => {
+    const fetchCurrentOrder = async () => {
+      try {
+        const q = query(
+          collection(db, "orders"),
+          where("buyerId", "==", auth.currentUser?.uid),
+          where("status", "==", "pending"),
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const latestOrder = {
+            id: querySnapshot.docs[0].id,
+            ...querySnapshot.docs[0].data(),
+          };
+
+          setCurrentOrder(latestOrder);
+        }
+      } catch (error) {
+        console.error("Failed to fetch current order");
+      }
+    };
+
+    fetchCurrentOrder();
+  }, []);
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && search.trim()) {
+      navigate(`/buyer/marketplace?search=${search}`);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-surface max-w-md mx-auto pb-10">
@@ -84,7 +164,9 @@ export default function BuyerDashboard() {
             <ShoppingBag size={22} />
           </div>
           <div>
-            <p className="text-2xl font-black text-on-surface">4</p>
+            <p className="text-2xl font-black text-on-surface">
+              {pendingOrdersCount}
+            </p>
             <p className="text-sm text-outline font-medium">Pending Orders</p>
           </div>
         </button>
@@ -114,7 +196,9 @@ export default function BuyerDashboard() {
           <input
             type="text"
             placeholder="Search product categories..."
-            className="w-full h-14 pl-12 pr-4 rounded-2xl bg-white border border-outline-variant/20 shadow-soft text-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={handleSearch}
           />
         </div>
       </section>
@@ -125,38 +209,49 @@ export default function BuyerDashboard() {
           Current Orders
         </h2>
 
-        <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-soft p-5 flex flex-col gap-4">
-          <div className="flex gap-4 items-center">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-              <img
-                src="https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&q=80&w=300"
-                alt="Order"
-                className="w-full h-full object-cover"
-              />
+        {currentOrder ? (
+          <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-soft p-5 flex flex-col gap-4">
+            <div className="flex gap-4 items-center">
+              <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
+                <img
+                  src={currentOrder.productImage}
+                  alt={currentOrder.productName}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="flex-1">
+                <p className="text-lg font-black text-on-surface">
+                  {currentOrder.productName}
+                </p>
+
+                <p className="text-sm text-outline">
+                  Artisan {currentOrder.sellerName} • In Production
+                </p>
+
+                <span className="inline-block mt-2 px-3 py-1 rounded-xl bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-wider">
+                  {currentOrder.status}
+                </span>
+              </div>
             </div>
 
-            <div className="flex-1">
-              <p className="text-lg font-black text-on-surface">
-                Ceramic Vase Order
-              </p>
-              <p className="text-sm text-outline">
-                Artisan Julian • In Production
-              </p>
-
-              <span className="inline-block mt-2 px-3 py-1 rounded-xl bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-wider">
-                Active
-              </span>
-            </div>
+            <button
+              onClick={() => navigate("/buyer/orders")}
+              className="w-full h-12 rounded-2xl bg-primary-container text-on-primary-container font-black flex items-center justify-center gap-2"
+            >
+              View Orders
+              <ChevronRight size={18} />
+            </button>
           </div>
+        ) : (
+          <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-soft p-8 text-center">
+            <p className="font-black text-on-surface">No active orders</p>
 
-          <button
-            onClick={() => navigate("/buyer/orders")}
-            className="w-full h-12 rounded-2xl bg-primary-container text-on-primary-container font-black flex items-center justify-center gap-2"
-          >
-            View Orders
-            <ChevronRight size={18} />
-          </button>
-        </div>
+            <p className="text-sm text-outline mt-2">
+              Explore the marketplace and support artisans.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* AI Assistant */}
@@ -193,29 +288,33 @@ export default function BuyerDashboard() {
         </h2>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white rounded-3xl overflow-hidden border border-outline-variant/10 shadow-soft">
-            <img
-              src="https://images.unsplash.com/photo-1581428982868-e410dd047a90?auto=format&fit=crop&q=80&w=300"
-              alt="Wood Craft"
-              className="w-full h-28 object-cover"
-            />
-            <div className="p-4">
-              <p className="text-sm font-black">Wooden Decor</p>
-              <p className="text-xs text-outline">Rs. 3,500</p>
-            </div>
-          </div>
+          {recommendedProducts.map((product) => (
+            <div
+              key={product.id}
+              className="bg-white rounded-3xl overflow-hidden border border-outline-variant/10 shadow-soft cursor-pointer"
+              onClick={() => navigate(`/buyer/product/${product.id}`)}
+            >
+              <img
+                src={product.imageUrl}
+                alt={product.productName}
+                className="w-full h-28 object-cover"
+              />
 
-          <div className="bg-white rounded-3xl overflow-hidden border border-outline-variant/10 shadow-soft">
-            <img
-              src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&q=80&w=300"
-              alt="Jewelry"
-              className="w-full h-28 object-cover"
-            />
-            <div className="p-4">
-              <p className="text-sm font-black">Handmade Jewelry</p>
-              <p className="text-xs text-outline">Rs. 2,800</p>
+              <div className="p-4">
+                <p className="text-sm font-black line-clamp-1">
+                  {product.productName}
+                </p>
+
+                <p className="text-xs text-outline mt-1">
+                  {product.sellerName}
+                </p>
+
+                <p className="text-xs font-black text-primary-container mt-2">
+                  Rs. {product.price}
+                </p>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       </section>
       {sidebarOpen && <BuyerSidebar onClose={() => setSidebarOpen(false)} />}
