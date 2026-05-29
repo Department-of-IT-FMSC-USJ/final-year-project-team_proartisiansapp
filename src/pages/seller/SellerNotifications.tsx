@@ -1,7 +1,6 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Bell } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle, MessageCircle, Bell, Truck, Star } from "lucide-react";
 import {
   collection,
   query,
@@ -13,26 +12,11 @@ import {
 
 import { db, auth } from "@/src/firebase/firebaseConfig";
 
-const NotificationsView: React.FC = () => {
+const SellerNotifications: React.FC = () => {
   const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState("All");
   const [notifications, setNotifications] = useState<any[]>([]);
-
-  const filteredNotifications = notifications.filter((notification) => {
-    if (activeTab === "Unread") {
-      return notification.unread;
-    }
-
-    if (activeTab === "Orders") {
-      return (
-        notification.type === "ORDER_ACCEPTED" ||
-        notification.type === "COMPLETED" ||
-        notification.type === "CANCELLED"
-      );
-    }
-
-    return true;
-  });
 
   useEffect(() => {
     const q = query(
@@ -52,6 +36,18 @@ const NotificationsView: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  const filteredNotifications = notifications.filter((notification) => {
+    if (activeTab === "Unread") {
+      return notification.unread;
+    }
+
+    if (activeTab === "Orders") {
+      return notification.type === "NEW_ORDER";
+    }
+
+    return true;
+  });
+
   const markAsRead = async (notificationId: string) => {
     await updateDoc(doc(db, "notifications", notificationId), {
       unread: false,
@@ -60,7 +56,6 @@ const NotificationsView: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-6 pb-24">
-      {/* Tabs */}
       <header className="flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}
@@ -70,14 +65,17 @@ const NotificationsView: React.FC = () => {
         </button>
 
         <div>
-          <h1 className="text-xl font-black text-on-surface">Notifications</h1>
+          <h1 className="text-xl font-black text-on-surface">
+            Seller Notifications
+          </h1>
 
           <p className="text-xs text-outline">
-            {notifications.filter((n) => n.unread).length}
+            {notifications.filter((n) => n.unread).length} unread
           </p>
         </div>
       </header>
-      <div className="bg-white px-4 border-b border-slate-50">
+
+      <div className="bg-white px-4 border-b border-outline-variant/10">
         <div className="flex gap-8">
           {["All", "Unread", "Orders"].map((tab) => (
             <button
@@ -85,8 +83,8 @@ const NotificationsView: React.FC = () => {
               onClick={() => setActiveTab(tab)}
               className={`flex flex-col items-center justify-center border-b-[3px] pb-3 pt-4 transition-all ${
                 activeTab === tab
-                  ? "border-primary text-slate-900"
-                  : "border-transparent text-slate-400"
+                  ? "border-primary-container text-on-surface"
+                  : "border-transparent text-outline"
               }`}
             >
               <p className="text-sm font-bold">{tab}</p>
@@ -95,7 +93,6 @@ const NotificationsView: React.FC = () => {
         </div>
       </div>
 
-      {/* List */}
       <div className="flex-1">
         {filteredNotifications.length === 0 ? (
           <div className="py-20 text-center text-outline">
@@ -106,7 +103,7 @@ const NotificationsView: React.FC = () => {
             <div
               key={notification.id}
               onClick={() => markAsRead(notification.id)}
-              className={`flex items-start gap-4 px-4 py-5 border-b border-slate-50 transition-colors cursor-pointer ${
+              className={`flex items-start gap-4 px-4 py-5 border-b border-outline-variant/10 cursor-pointer transition-colors ${
                 notification.unread
                   ? "bg-primary/5 border-l-4 border-l-primary"
                   : "bg-white"
@@ -116,10 +113,10 @@ const NotificationsView: React.FC = () => {
                 className={`p-3 rounded-2xl shrink-0 ${
                   notification.unread
                     ? "bg-primary/20 text-primary"
-                    : "bg-slate-100 text-slate-400"
+                    : "bg-surface-container text-outline"
                 }`}
               >
-                {getIconForType(notification.type)}
+                <Bell size={20} />
               </div>
 
               <div className="flex-1 flex flex-col gap-1">
@@ -127,21 +124,21 @@ const NotificationsView: React.FC = () => {
                   <p
                     className={`text-base leading-tight ${
                       notification.unread
-                        ? "font-bold text-slate-900"
-                        : "font-semibold text-slate-700"
+                        ? "font-bold text-on-surface"
+                        : "font-semibold text-on-surface"
                     }`}
                   >
                     {notification.title}
                   </p>
 
-                  <p className="text-slate-400 text-xs">
+                  <p className="text-outline text-xs">
                     {notification.createdAt?.toDate
                       ? notification.createdAt.toDate().toLocaleDateString()
                       : ""}
                   </p>
                 </div>
 
-                <p className="text-slate-500 text-sm leading-snug">
+                <p className="text-outline text-sm leading-snug">
                   {notification.message}
                 </p>
               </div>
@@ -153,21 +150,4 @@ const NotificationsView: React.FC = () => {
   );
 };
 
-function getIconForType(type: string) {
-  switch (type) {
-    case "ORDER_ACCEPTED":
-      return <CheckCircle size={20} />;
-
-    case "COMPLETED":
-      return <CheckCircle size={20} />;
-
-    case "CANCELLED":
-      return <Bell size={20} />;
-
-    case "NEW_ORDER":
-      return <Bell size={20} />;
-    default:
-      return <Bell size={20} />;
-  }
-}
-export default NotificationsView;
+export default SellerNotifications;

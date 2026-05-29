@@ -1,16 +1,15 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Edit3, CheckCircle, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/src/lib/utils";
 import {
   collection,
-  getDocs,
   query,
   where,
+  onSnapshot,
   deleteDoc,
   doc,
   updateDoc,
-  addDoc,
 } from "firebase/firestore";
 import { db, auth } from "@/src/firebase/firebaseConfig";
 
@@ -24,95 +23,40 @@ export default function Inventory() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
 
-  // FETCH DATA
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // PRODUCTS
-        const productQuery = query(
-          collection(db, "products"),
-          where("sellerId", "==", auth.currentUser?.uid),
-        );
+    const productQuery = query(
+      collection(db, "products"),
+      where("sellerId", "==", auth.currentUser?.uid),
+    );
 
-        const productSnapshot = await getDocs(productQuery);
+    const soldQuery = query(
+      collection(db, "soldProducts"),
+      where("sellerId", "==", auth.currentUser?.uid),
+    );
 
-        const fetchedProducts = productSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+    const unsubscribeProducts = onSnapshot(productQuery, (snapshot) => {
+      const fetchedProducts = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-        setProducts(fetchedProducts);
+      setProducts(fetchedProducts);
+    });
 
-        // SOLD PRODUCTS
-        const soldQuery = query(
-          collection(db, "soldProducts"),
-          where("sellerId", "==", auth.currentUser?.uid),
-        );
+    const unsubscribeSold = onSnapshot(soldQuery, (snapshot) => {
+      const fetchedSoldProducts = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-        const soldSnapshot = await getDocs(soldQuery);
+      setSoldProducts(fetchedSoldProducts);
+    });
 
-        const fetchedSoldProducts = soldSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        setSoldProducts(fetchedSoldProducts);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
+    return () => {
+      unsubscribeProducts();
+      unsubscribeSold();
     };
-
-    fetchData();
   }, []);
-
-  // SOLD BUTTON
-  const markAsSold = async (productId: string) => {
-    try {
-      const product = products.find((p) => p.id === productId);
-
-      if (!product) return;
-      if (product.stock <= 0) return;
-
-      const newStock = product.stock - 1;
-
-      // Update stock in products collection
-      await updateDoc(doc(db, "products", productId), {
-        stock: newStock,
-      });
-
-      // Add record to soldProducts collection
-      const soldDoc = await addDoc(collection(db, "soldProducts"), {
-        sellerId: auth.currentUser?.uid,
-        productName: product.productName,
-        category: product.category,
-        price: product.price,
-        quantity: 1,
-        imageUrl: product.imageUrl,
-        soldAt: new Date(),
-      });
-
-      // Update UI
-      setProducts((prev) =>
-        prev.map((p) => (p.id === productId ? { ...p, stock: newStock } : p)),
-      );
-
-      setSoldProducts((prev) => [
-        ...prev,
-        {
-          id: soldDoc.id,
-          productName: product.productName,
-          category: product.category,
-          price: product.price,
-          quantity: 1,
-          imageUrl: product.imageUrl,
-        },
-      ]);
-    } catch (error) {
-      console.error("Error marking product as sold:", error);
-    }
-  };
 
   // MAKE ACTIVE
   const makeActive = async (productId: string) => {
@@ -120,10 +64,6 @@ export default function Inventory() {
       await updateDoc(doc(db, "products", productId), {
         stock: 1,
       });
-
-      setProducts((prev) =>
-        prev.map((p) => (p.id === productId ? { ...p, stock: 1 } : p)),
-      );
     } catch (error) {
       console.error("Error updating product:", error);
     }
@@ -135,8 +75,6 @@ export default function Inventory() {
 
     try {
       await deleteDoc(doc(db, "products", productToDelete));
-
-      setProducts((prev) => prev.filter((p) => p.id !== productToDelete));
 
       setShowDeleteModal(false);
       setProductToDelete(null);
@@ -164,7 +102,7 @@ export default function Inventory() {
         <div className="flex items-center p-4 justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/seller/dashboard")}
               className="size-10 flex items-center justify-center rounded-full hover:bg-surface-container"
             >
               <ArrowLeft size={20} />
@@ -311,7 +249,7 @@ export default function Inventory() {
                     <>
                       <button
                         onClick={() =>
-                          navigate("/add-product", {
+                          navigate("/seller/add-product", {
                             state: {
                               editMode: true,
                               product,
@@ -322,14 +260,6 @@ export default function Inventory() {
                       >
                         <Edit3 size={14} />
                         Edit
-                      </button>
-
-                      <button
-                        onClick={() => markAsSold(product.id)}
-                        className="flex-1 h-10 flex items-center justify-center gap-2 bg-surface-container-high text-on-surface-variant rounded-xl text-[10px] font-black uppercase tracking-widest"
-                      >
-                        <CheckCircle size={14} />
-                        Sold
                       </button>
 
                       <button

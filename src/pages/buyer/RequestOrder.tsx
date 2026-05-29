@@ -81,6 +81,15 @@ export default function RequestOrder() {
         createdAt: serverTimestamp(),
       });
 
+      await addDoc(collection(db, "notifications"), {
+        userId: product.sellerId,
+        title: "New Order",
+        message: `You received a new order for ${product.productName}.`,
+        type: "NEW_ORDER",
+        unread: true,
+        createdAt: new Date(),
+      });
+
       // create chat document automatically
       await setDoc(doc(db, "chats", orderRef.id), {
         orderId: orderRef.id,

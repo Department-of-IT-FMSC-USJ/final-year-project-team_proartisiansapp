@@ -7,17 +7,22 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { db } from "../../firebase/firebaseConfig";
-import { useUser } from "../../context/UserContext";
+import { auth, db } from "../../firebase/firebaseConfig";
+
+import { ArrowLeft } from "lucide-react";
 
 const ChatList = () => {
-  const { user } = useUser();
+  const user = auth.currentUser;
+  console.log("ChatList User:", user);
   const navigate = useNavigate();
 
   const [chats, setChats] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log("No user found");
+      return;
+    }
 
     const q = query(
       collection(db, "chats"),
@@ -37,10 +42,46 @@ const ChatList = () => {
     return () => unsubscribe();
   }, [user]);
 
+  useEffect(() => {
+    if (!user) {
+      console.log("No user found");
+      return;
+    }
+
+    console.log("User UID:", user.uid);
+
+    const q = query(
+      collection(db, "chats"),
+      where("participants", "array-contains", user.uid),
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log("Chats found:", snapshot.docs.length);
+
+      const chatData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      console.log(chatData);
+
+      setChats(chatData);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
   return (
     <div className="min-h-screen bg-surface max-w-md mx-auto">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white border-b border-outline-variant/10 px-4 py-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="size-10 rounded-2xl bg-white border border-outline-variant/20 flex items-center justify-center shadow-soft"
+        >
+          <ArrowLeft size={20} />
+        </button>
+
         <h1 className="text-2xl font-black">Messages</h1>
       </header>
 
@@ -54,12 +95,12 @@ const ChatList = () => {
           chats.map((chat) => (
             <button
               key={chat.id}
-              onClick={() => navigate(`/chat/${chat.orderId}`)}
+              onClick={() => navigate(`/chat/${chat.id}`)}
               className="w-full bg-white border rounded-2xl p-4 flex items-center gap-4 shadow-sm text-left hover:bg-gray-50 transition"
             >
               {/* Avatar */}
               <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center font-bold">
-                {(user.uid === chat.buyerId
+                {(user?.uid === chat.buyerId
                   ? chat.sellerName
                   : chat.buyerName
                 )?.charAt(0)}{" "}
@@ -69,19 +110,20 @@ const ChatList = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <h2 className="font-semibold truncate">
-                    {user.uid === chat.buyerId
+                    {user?.uid === chat.buyerId
                       ? chat.sellerName
                       : chat.buyerName}
                   </h2>
 
-                  {((user.uid === chat.buyerId && !chat.lastSeenByBuyer) ||
-                    (user.uid === chat.sellerId && !chat.lastSeenBySeller)) && (
+                  {((user?.uid === chat.buyerId && !chat.lastSeenByBuyer) ||
+                    (user?.uid === chat.sellerId &&
+                      !chat.lastSeenBySeller)) && (
                     <div className="w-3 h-3 rounded-full bg-blue-500" />
                   )}
                 </div>
 
                 <p className="text-sm text-gray-500 truncate">
-                  {chat.lastSenderId === user.uid ? "You: " : ""}
+                  {chat.lastSenderId === user?.uid ? "You: " : ""}
                   {chat.lastMessage || "No messages yet"}
                 </p>
               </div>

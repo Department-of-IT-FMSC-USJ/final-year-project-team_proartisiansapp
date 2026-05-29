@@ -106,12 +106,15 @@ export const AppLayout = () => {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate("/seller/inbox")}
+              onClick={() => navigate("/chat")}
               className="size-11 rounded-2xl bg-white border border-outline-variant/20 flex items-center justify-center shadow-soft"
             >
               <MessageCircle size={18} />
             </button>
-            <button className="relative size-10 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant">
+            <button
+              onClick={() => navigate("/seller/notifications")}
+              className="relative size-10 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant"
+            >
               <Bell size={20} />
               <span className="absolute top-2.5 right-2.5 size-2 bg-primary-container rounded-full border border-white"></span>
             </button>

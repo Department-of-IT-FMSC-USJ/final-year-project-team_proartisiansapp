@@ -7,9 +7,11 @@ import {
   collection,
   query,
   where,
-  getDocs,
+  onSnapshot,
   doc,
   updateDoc,
+  getDoc,
+  addDoc,
 } from "firebase/firestore";
 
 import { db, auth } from "@/src/firebase/firebaseConfig";
@@ -22,32 +24,83 @@ export default function Orders() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    const q = query(
+      collection(db, "orders"),
+      where("sellerId", "==", auth.currentUser?.uid),
+    );
 
-  const fetchOrders = async () => {
-    try {
-      const q = query(
-        collection(db, "orders"),
-        where("sellerId", "==", auth.currentUser?.uid),
-      );
-
-      const querySnapshot = await getDocs(q);
-
-      const fetchedOrders = querySnapshot.docs.map((doc) => ({
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedOrders = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
       setOrders(fetchedOrders);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const acceptOrder = async (order: any) => {
+    try {
+      console.log("Accept clicked");
+      console.log(order);
+
+      const productRef = doc(db, "products", order.productId);
+
+      const productSnap = await getDoc(productRef);
+
+      if (!productSnap.exists()) return;
+
+      const productData = productSnap.data();
+
+      const currentStock = productData.stock || 0;
+
+      if (currentStock < order.quantity) {
+        alert("Not enough stock available");
+        return;
+      }
+
+      const newStock = currentStock - order.quantity;
+
+      await updateDoc(productRef, {
+        stock: newStock,
+      });
+
+      await addDoc(collection(db, "soldProducts"), {
+        sellerId: auth.currentUser?.uid,
+        productId: order.productId,
+        productName: order.productName,
+        category: productData.category,
+        price: productData.price,
+        quantity: order.quantity,
+        imageUrl: productData.imageUrl,
+        soldAt: new Date(),
+      });
+
+      await updateDoc(doc(db, "orders", order.id), {
+        status: "accepted",
+      });
+      await addDoc(collection(db, "notifications"), {
+        userId: order.buyerId,
+        title: "Order Accepted",
+        message: `${order.productName} has been accepted by the seller.`,
+        type: "ORDER_ACCEPTED",
+        unread: true,
+        createdAt: new Date(),
+      });
     } catch (error) {
-      console.error("Failed to fetch orders");
+      console.error("Failed to accept order", error);
     }
   };
 
   const filteredOrders = orders.filter((order) => {
     if (activeTab === "Active") {
       return order.status === "pending";
+    }
+
+    if (activeTab === "Accepted") {
+      return order.status === "accepted";
     }
 
     if (activeTab === "Completed") {
@@ -69,7 +122,7 @@ export default function Orders() {
       </header>
 
       <div className="flex bg-surface-container-low p-1 rounded-2xl">
-        {["Active", "Completed", "Cancelled"].map((tab) => (
+        {["Active", "Accepted", "Completed", "Cancelled"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -117,9 +170,11 @@ export default function Orders() {
 
                   order.status === "pending"
                     ? "bg-blue-50 text-blue-600"
-                    : order.status === "completed"
-                      ? "bg-green-50 text-green-600"
-                      : "bg-red-50 text-red-600",
+                    : order.status === "accepted"
+                      ? "bg-yellow-50 text-yellow-600"
+                      : order.status === "completed"
+                        ? "bg-green-50 text-green-600"
+                        : "bg-red-50 text-red-600",
                 )}
               >
                 <Clock size={10} />
@@ -132,16 +187,10 @@ export default function Orders() {
               {order.status === "pending" && (
                 <>
                   <button
-                    onClick={async () => {
-                      await updateDoc(doc(db, "orders", order.id), {
-                        status: "completed",
-                      });
-
-                      fetchOrders();
-                    }}
+                    onClick={() => acceptOrder(order)}
                     className="flex-1 bg-primary-container text-[#0f172a] h-11 rounded-xl text-[10px] font-black uppercase tracking-widest"
                   >
-                    Ship Order
+                    Accept Order
                   </button>
 
                   <button
@@ -150,7 +199,14 @@ export default function Orders() {
                         status: "cancelled",
                       });
 
-                      fetchOrders();
+                      await addDoc(collection(db, "notifications"), {
+                        userId: order.buyerId,
+                        title: "Order Cancelled",
+                        message: `${order.productName} has been cancelled.`,
+                        type: "CANCELLED",
+                        unread: true,
+                        createdAt: new Date(),
+                      });
                     }}
                     className="flex-1 bg-red-500 text-white h-11 rounded-xl text-[10px] font-black uppercase tracking-widest"
                   >
@@ -162,7 +218,36 @@ export default function Orders() {
                 </>
               )}
 
-              {order.status !== "pending" && (
+              {order.status === "accepted" && (
+                <>
+                  <button
+                    onClick={async () => {
+                      await updateDoc(doc(db, "orders", order.id), {
+                        status: "completed",
+                      });
+
+                      await addDoc(collection(db, "notifications"), {
+                        userId: order.buyerId,
+                        title: "Order Delivered",
+                        message: `Your order for ${order.productName} has been completed.`,
+                        type: "COMPLETED",
+                        unread: true,
+                        createdAt: new Date(),
+                      });
+                    }}
+                    className="flex-1 bg-green-500 text-white h-11 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                  >
+                    Complete Order
+                  </button>
+
+                  <button onClick={() => navigate(`/chat/${order.id}`)}>
+                    Chat
+                  </button>
+                </>
+              )}
+
+              {(order.status === "completed" ||
+                order.status === "cancelled") && (
                 <button className="w-full bg-surface-container-high text-on-surface-variant h-11 rounded-xl text-[10px] font-black uppercase tracking-widest">
                   Details
                 </button>

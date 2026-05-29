@@ -10,7 +10,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import BuyerSidebar from "../../components/BuyerSidebar";
-import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db, auth } from "@/src/firebase/firebaseConfig";
 
 export default function BuyerDashboard() {
@@ -24,6 +24,7 @@ export default function BuyerDashboard() {
   const [recommendedProducts, setRecommendedProducts] = useState<any[]>([]);
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
   const [currentOrder, setCurrentOrder] = useState<any | null>(null);
+  const [wishlistCount, setWishlistCount] = useState(0);
 
   useEffect(() => {
     if (successMessage) {
@@ -33,71 +34,45 @@ export default function BuyerDashboard() {
   }, [successMessage]);
 
   useEffect(() => {
-    const fetchRecommendedProducts = async () => {
-      try {
-        const q = query(collection(db, "products"), limit(4));
+    const q = query(
+      collection(db, "orders"),
+      where("buyerId", "==", auth.currentUser?.uid),
+    );
 
-        const querySnapshot = await getDocs(q);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const orders = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-        const fetchedProducts = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+      const pendingOrders = orders.filter(
+        (order: any) =>
+          order.status === "pending" || order.status === "accepted",
+      );
 
-        setRecommendedProducts(fetchedProducts);
-      } catch (error) {
-        console.error("Failed to fetch products");
+      setPendingOrdersCount(pendingOrders.length);
+
+      if (pendingOrders.length > 0) {
+        setCurrentOrder(pendingOrders[0]);
+      } else {
+        setCurrentOrder(null);
       }
-    };
+    });
 
-    fetchRecommendedProducts();
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    const fetchPendingOrders = async () => {
-      try {
-        const q = query(
-          collection(db, "orders"),
-          where("buyerId", "==", auth.currentUser?.uid),
-          where("status", "==", "pending"),
-        );
+    const q = query(
+      collection(db, "wishlist"),
+      where("buyerId", "==", auth.currentUser?.uid),
+    );
 
-        const querySnapshot = await getDocs(q);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setWishlistCount(snapshot.size);
+    });
 
-        setPendingOrdersCount(querySnapshot.size);
-      } catch (error) {
-        console.error("Failed to fetch pending orders");
-      }
-    };
-
-    fetchPendingOrders();
-  }, []);
-
-  useEffect(() => {
-    const fetchCurrentOrder = async () => {
-      try {
-        const q = query(
-          collection(db, "orders"),
-          where("buyerId", "==", auth.currentUser?.uid),
-          where("status", "==", "pending"),
-        );
-
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-          const latestOrder = {
-            id: querySnapshot.docs[0].id,
-            ...querySnapshot.docs[0].data(),
-          };
-
-          setCurrentOrder(latestOrder);
-        }
-      } catch (error) {
-        console.error("Failed to fetch current order");
-      }
-    };
-
-    fetchCurrentOrder();
+    return () => unsubscribe();
   }, []);
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -179,7 +154,9 @@ export default function BuyerDashboard() {
             <Heart size={22} />
           </div>
           <div>
-            <p className="text-2xl font-black text-on-surface">12</p>
+            <p className="text-2xl font-black text-on-surface">
+              {wishlistCount}
+            </p>
             <p className="text-sm text-outline font-medium">Wishlist Items</p>
           </div>
         </button>
@@ -199,6 +176,23 @@ export default function BuyerDashboard() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={handleSearch}
+            className="
+    w-full
+    h-14
+    pl-12
+    pr-4
+    rounded-2xl
+    bg-white
+    border
+    border-outline-variant/20
+    shadow-soft
+    text-sm
+    text-on-surface
+    placeholder:text-outline
+    focus:outline-none
+    focus:ring-2
+    focus:ring-primary-container
+  "
           />
         </div>
       </section>

@@ -9,9 +9,18 @@ import {
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { doc, getDoc } from "firebase/firestore";
+import {
+  doc,
+  onSnapshot,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 
-import { db } from "@/src/firebase/firebaseConfig";
+import { db, auth } from "@/src/firebase/firebaseConfig";
 
 export default function ProductDetails() {
   const navigate = useNavigate();
@@ -19,27 +28,67 @@ export default function ProductDetails() {
 
   const [product, setProduct] = useState<any>(null);
   useEffect(() => {
-    const fetchProduct = async () => {
-      if (!id) return;
+    if (!id) return;
 
-      try {
-        const docRef = doc(db, "products", id);
+    const docRef = doc(db, "products", id);
 
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          setProduct({
-            id: docSnap.id,
-            ...docSnap.data(),
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch product");
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setProduct({
+          id: docSnap.id,
+          ...docSnap.data(),
+        });
       }
-    };
+    });
 
-    fetchProduct();
+    return () => unsubscribe();
   }, [id]);
+
+  const startChat = async () => {
+    try {
+      const buyerId = auth.currentUser?.uid;
+
+      if (!buyerId) return;
+
+      const existingQuery = query(
+        collection(db, "chats"),
+        where("buyerId", "==", buyerId),
+        where("sellerId", "==", product.sellerId),
+        where("productId", "==", product.id),
+      );
+
+      const existingSnapshot = await getDocs(existingQuery);
+
+      if (!existingSnapshot.empty) {
+        navigate(`/chat/${existingSnapshot.docs[0].id}`);
+        return;
+      }
+
+      const chatRef = await addDoc(collection(db, "chats"), {
+        buyerId,
+        sellerId: product.sellerId,
+
+        buyerName: auth.currentUser?.displayName || "Buyer",
+        sellerName: product.sellerName,
+
+        productId: product.id,
+        productName: product.productName,
+
+        participants: [buyerId, product.sellerId],
+
+        lastMessage: "",
+        createdAt: serverTimestamp(),
+        lastUpdated: serverTimestamp(),
+
+        lastSeenByBuyer: true,
+        lastSeenBySeller: false,
+      });
+
+      navigate(`/chat/${chatRef.id}`);
+    } catch (error) {
+      console.error("Failed to start chat", error);
+    }
+  };
 
   if (!product) {
     return (
@@ -124,7 +173,9 @@ export default function ProductDetails() {
           <div className="grid grid-cols-2 gap-3">
             <FeatureCard label={product.category} />
             <FeatureCard label={`Stock: ${product.stock}`} />
-            <FeatureCard label={product.status} />
+            <FeatureCard
+              label={product.stock > 0 ? "Available" : "Out of Stock"}
+            />
             <FeatureCard label="Handmade" />
           </div>
         </section>
@@ -159,13 +210,14 @@ export default function ProductDetails() {
       {/* Bottom Buttons */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-outline-variant/10 p-4 flex gap-3">
         <button
-          onClick={() => navigate(`/chat/${product.id}`)}
+          onClick={startChat}
           className="size-14 rounded-2xl border border-outline-variant/20 flex items-center justify-center"
         >
           <MessageCircle size={22} />
         </button>
 
         <button
+          disabled={product.stock <= 0}
           onClick={() =>
             navigate("/buyer/request-order", {
               state: {
@@ -173,10 +225,14 @@ export default function ProductDetails() {
               },
             })
           }
-          className="flex-1 h-14 rounded-2xl bg-primary-container text-on-primary-container font-black flex items-center justify-center gap-2 shadow-soft"
+          className={`flex-1 h-14 rounded-2xl font-black flex items-center justify-center gap-2 shadow-soft ${
+            product.stock <= 0
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-primary-container text-on-primary-container"
+          }`}
         >
           <ShoppingBag size={20} />
-          Request Order
+          {product.stock <= 0 ? "Out of Stock" : "Request Order"}
         </button>
       </div>
     </div>

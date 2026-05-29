@@ -1,8 +1,17 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Search, Heart } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/src/firebase/firebaseConfig";
+import {
+  addDoc,
+  collection,
+  onSnapshot,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import { auth, db } from "@/src/firebase/firebaseConfig";
 
 export default function Marketplace() {
   const navigate = useNavigate();
@@ -10,6 +19,7 @@ export default function Marketplace() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [products, setProducts] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
 
   const categories = [
     "All",
@@ -24,6 +34,8 @@ export default function Marketplace() {
   ];
 
   const filteredProducts = products.filter((product) => {
+    if (product.stock <= 0) return false;
+
     const matchesSearch = product.productName
       .toLowerCase()
       .includes(search.toLowerCase());
@@ -35,22 +47,33 @@ export default function Marketplace() {
   });
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "products"));
+    const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
+      const fetchedProducts = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-        const fetchedProducts = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+      setProducts(fetchedProducts);
+    });
 
-        setProducts(fetchedProducts);
-      } catch (error) {
-        console.error("Failed to fetch products");
-      }
-    };
+    return () => unsubscribe();
+  }, []);
 
-    fetchProducts();
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const q = query(
+      collection(db, "wishlist"),
+      where("buyerId", "==", auth.currentUser.uid),
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ids = snapshot.docs.map((doc) => doc.data().productId);
+
+      setWishlistIds(ids);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   return (
@@ -119,8 +142,43 @@ export default function Marketplace() {
                 className="w-full h-36 object-cover"
               />
 
-              <button className="absolute top-3 right-3 size-9 rounded-full bg-white/90 flex items-center justify-center shadow-md">
-                <Heart size={16} />
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+
+                  const wishlistQuery = query(
+                    collection(db, "wishlist"),
+                    where("buyerId", "==", auth.currentUser?.uid),
+                    where("productId", "==", product.id),
+                  );
+
+                  const existing = await getDocs(wishlistQuery);
+
+                  if (!existing.empty) {
+                    await deleteDoc(doc(db, "wishlist", existing.docs[0].id));
+                    return;
+                  }
+
+                  await addDoc(collection(db, "wishlist"), {
+                    buyerId: auth.currentUser?.uid,
+                    productId: product.id,
+                    productName: product.productName,
+                    sellerName: product.sellerName,
+                    imageUrl: product.imageUrl,
+                    price: product.price,
+                    createdAt: new Date(),
+                  });
+                }}
+                className="absolute top-3 right-3 size-9 rounded-full bg-white/90 flex items-center justify-center shadow-md"
+              >
+                <Heart
+                  size={16}
+                  className={
+                    wishlistIds.includes(product.id)
+                      ? "fill-red-500 text-red-500"
+                      : ""
+                  }
+                />
               </button>
             </div>
 

@@ -3,78 +3,20 @@ import { cn } from "@/src/lib/utils";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 import { db, auth } from "@/src/firebase/firebaseConfig";
 
-type OrderStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "REJECTED";
-
-interface Order {
-  id: string;
-  title: string;
-  artisan: string;
-  artisanAvatar: string;
-  price: string;
-  image: string;
-  status: OrderStatus;
-  date: string;
-}
-
-const mockOrders: Order[] = [
-  {
-    id: "1",
-    title: "Hand-Forged Steel Knife",
-    artisan: "Iron & Fire Studios",
-    artisanAvatar: "https://i.pravatar.cc/150?u=1",
-    price: "Rs.185.00",
-    image:
-      "https://images.unsplash.com/photo-1579309252431-2917537b98d2?auto=format&fit=crop&q=80&w=400",
-    status: "COMPLETED",
-    date: "Oct 24, 2023",
-  },
-  {
-    id: "2",
-    title: "Custom Oak Dining Table",
-    artisan: "Timber Craftsman",
-    artisanAvatar: "https://i.pravatar.cc/150?u=2",
-    price: "Rs.1,240.00",
-    image:
-      "https://images.unsplash.com/photo-1533091726053-27e1f4ef4e13?auto=format&fit=crop&q=80&w=400",
-    status: "PENDING",
-    date: "Nov 12, 2023",
-  },
-  {
-    id: "3",
-    title: "Hand-Thrown Ceramic Set",
-    artisan: "Earth & Clay",
-    artisanAvatar: "https://i.pravatar.cc/150?u=3",
-    price: "Rs.95.00",
-    image:
-      "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&q=80&w=400",
-    status: "ACTIVE",
-    date: "Nov 08, 2023",
-  },
-  {
-    id: "4",
-    title: "Woven Leather Bag",
-    artisan: "Urban Hide",
-    artisanAvatar: "https://i.pravatar.cc/150?u=4",
-    price: "Rs.320.00",
-    image:
-      "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=400",
-    status: "REJECTED",
-    date: "Nov 01, 2023",
-  },
-];
-
 const statusStyles: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700",
+  accepted: "bg-blue-100 text-blue-700",
   completed: "bg-emerald-100 text-emerald-700",
   cancelled: "bg-rose-100 text-rose-700",
 };
 
 const statusLabels: Record<string, string> = {
   pending: "Processing",
+  accepted: "Accepted",
   completed: "Delivered",
   cancelled: "Cancelled",
 };
@@ -82,7 +24,7 @@ const statusLabels: Record<string, string> = {
 export default function BuyerOrders() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("All");
-  const tabs = ["All", "Pending", "Active", "Completed"];
+  const tabs = ["All", "Pending", "Accepted", "Completed", "Cancelled"];
   const [orders, setOrders] = useState<any[]>([]);
 
   const filtered =
@@ -93,28 +35,22 @@ export default function BuyerOrders() {
         );
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    const q = query(
+      collection(db, "orders"),
+      where("buyerId", "==", auth.currentUser?.uid),
+    );
 
-  const fetchOrders = async () => {
-    try {
-      const q = query(
-        collection(db, "orders"),
-        where("buyerId", "==", auth.currentUser?.uid),
-      );
-
-      const querySnapshot = await getDocs(q);
-
-      const fetchedOrders = querySnapshot.docs.map((doc) => ({
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedOrders = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
       setOrders(fetchedOrders);
-    } catch (error) {
-      console.error("Failed to fetch buyer orders");
-    }
-  };
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-6 pb-24">
@@ -126,7 +62,8 @@ export default function BuyerOrders() {
           <ArrowLeft className="w-6 h-6" />
         </button>
       </header>
-      <div className="sticky top-[72px] bg-white z-10 border-b border-outline-variant/10">
+      <div className="sticky top-0 bg-white z-50 border-b border-outline-variant/10">
+        {" "}
         <div className="flex px-4 gap-6 overflow-x-auto">
           {tabs.map((tab) => (
             <button
@@ -175,12 +112,10 @@ export default function BuyerOrders() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="size-6 rounded-full overflow-hidden">
-                    <img
-                      src={order.artisanAvatar}
-                      alt={order.sellerName}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="size-6 rounded-full overflow-hidden bg-primary-container flex items-center justify-center">
+                    <span className="text-on-primary-container text-xs font-bold">
+                      {order.sellerName?.charAt(0)}
+                    </span>
                   </div>
                   <p className="text-outline text-sm">{order.sellerName}</p>
                 </div>

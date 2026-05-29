@@ -1,40 +1,53 @@
-import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Trash2 } from "lucide-react";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
-const mockSaved = [
-  {
-    id: "1",
-    title: "Hand-Forged Damascus Knife",
-    artisan: "IronWill Forge",
-    price: "Rs.245.00",
-    image:
-      "https://images.unsplash.com/photo-1579309252119-905f96860f38?auto=format&fit=crop&q=80&w=300",
-  },
-  {
-    id: "2",
-    title: "Minimalist Ceramic Set",
-    artisan: "Earth & Fire Studio",
-    price: "Rs.85.00",
-    image:
-      "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&q=80&w=300",
-  },
-  {
-    id: "3",
-    title: "Hand-Stitched Leather Tote",
-    artisan: "Nomad Craft Co.",
-    price: "Rs.120.00",
-    image:
-      "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=300",
-  },
-];
+import { db, auth } from "@/src/firebase/firebaseConfig";
 
 export default function BuyerSaved() {
   const [activeTab, setActiveTab] = useState("Products");
-  const [saved, setSaved] = useState(mockSaved);
+  const [saved, setSaved] = useState<any[]>([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "wishlist"),
+      where("buyerId", "==", auth.currentUser?.uid),
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setSaved(items);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-6 pb-24">
       {" "}
+      <header className="flex items-center gap-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="size-10 rounded-2xl bg-white border border-outline-variant/20 flex items-center justify-center shadow-soft"
+        >
+          <ArrowLeft size={20} />
+        </button>
+
+        <h1 className="text-xl font-black text-on-surface">Wishlist</h1>
+      </header>
       <div className="bg-white sticky top-[72px] z-10 border-b border-outline-variant/10">
         <div className="flex px-4 gap-8">
           {[`Products (${saved.length})`, "Artisans"].map((tab) => {
@@ -67,24 +80,26 @@ export default function BuyerSaved() {
             {saved.map((product) => (
               <div
                 key={product.id}
-                className="p-4 border-b border-outline-variant/10 flex items-stretch gap-4"
+                onClick={() => navigate(`/buyer/product/${product.productId}`)}
+                className="p-4 border-b border-outline-variant/10 flex items-stretch gap-4 cursor-pointer"
               >
                 <div className="flex-[2] flex flex-col justify-between py-1">
                   <div className="flex flex-col gap-1">
                     <p className="text-on-surface text-base font-black leading-tight">
-                      {product.title}
+                      {product.productName}
                     </p>
-                    <p className="text-outline text-sm">by {product.artisan}</p>
+                    <p className="text-outline text-sm">
+                      by {product.sellerName}
+                    </p>
                     <p className="text-primary-container font-black text-lg mt-2">
                       {product.price}
                     </p>
                   </div>
                   <button
-                    onClick={() =>
-                      setSaved((prev) =>
-                        prev.filter((p) => p.id !== product.id),
-                      )
-                    }
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await deleteDoc(doc(db, "wishlist", product.id));
+                    }}
                     className="flex items-center gap-2 bg-surface-container text-on-surface-variant px-4 h-9 rounded-xl text-sm font-bold w-fit mt-4 hover:text-error transition-colors"
                   >
                     <Trash2 size={14} />
@@ -93,8 +108,8 @@ export default function BuyerSaved() {
                 </div>
                 <div className="size-32 rounded-2xl overflow-hidden shrink-0 border border-outline-variant/10">
                   <img
-                    src={product.image}
-                    alt={product.title}
+                    src={product.imageUrl}
+                    alt={product.productName}
                     className="w-full h-full object-cover"
                   />
                 </div>

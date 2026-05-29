@@ -24,7 +24,7 @@ interface Message {
 
 export default function ChatRoom() {
   const navigate = useNavigate();
-  const { orderId } = useParams();
+  const { chatId } = useParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [chatUserName, setChatUserName] = useState("");
@@ -32,10 +32,10 @@ export default function ChatRoom() {
   const [currentRole, setCurrentRole] = useState<"buyer" | "seller">("buyer");
 
   useEffect(() => {
-    if (!orderId) return;
+    if (!chatId) return;
 
     const q = query(
-      collection(db, "chats", orderId, "messages"),
+      collection(db, "chats", chatId, "messages"),
       orderBy("createdAt"),
     );
 
@@ -55,15 +55,15 @@ export default function ChatRoom() {
     });
 
     return () => unsubscribe();
-  }, [orderId]);
+  }, [chatId]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
 
     try {
-      const chatRef = doc(db, "chats", orderId!);
+      const chatRef = doc(db, "chats", chatId!);
 
-      await addDoc(collection(db, "chats", orderId!, "messages"), {
+      await addDoc(collection(db, "chats", chatId!, "messages"), {
         text: input,
 
         senderId: auth.currentUser?.uid,
@@ -89,60 +89,60 @@ export default function ChatRoom() {
 
       setInput("");
     } catch (error) {
-      console.error("Failed to send message");
+      console.error("Failed to send message", error);
+      console.log(chatId);
+      console.log(auth.currentUser?.uid);
     }
   };
 
   useEffect(() => {
-    const fetchOrderInfo = async () => {
-      if (!orderId) return;
+    const fetchChatInfo = async () => {
+      if (!chatId) return;
 
       try {
-        const orderRef = doc(db, "orders", orderId);
+        const chatRef = doc(db, "chats", chatId);
 
-        const orderSnap = await getDoc(orderRef);
+        const chatSnap = await getDoc(chatRef);
 
-        if (!orderSnap.exists()) return;
+        if (!chatSnap.exists()) return;
 
-        const orderData = orderSnap.data();
+        const chatData = chatSnap.data();
 
         const currentUserId = auth.currentUser?.uid;
 
-        if (currentUserId === orderData.buyerId) {
+        if (currentUserId === chatData.buyerId) {
           setCurrentRole("buyer");
-
-          setChatUserName(orderData.sellerName);
+          setChatUserName(chatData.sellerName);
         } else {
           setCurrentRole("seller");
-
-          setChatUserName(orderData.buyerName);
+          setChatUserName(chatData.buyerName);
         }
       } catch (error) {
-        console.error("Failed to fetch order info");
+        console.error("Failed to fetch chat info", error);
       }
     };
 
-    fetchOrderInfo();
-  }, [orderId]);
+    fetchChatInfo();
+  }, [chatId]);
 
   useEffect(() => {
     const markChatAsRead = async () => {
-      if (!orderId) return;
+      if (!chatId) return;
 
       try {
-        const chatRef = doc(db, "chats", orderId);
+        const chatRef = doc(db, "chats", chatId);
 
         await updateDoc(chatRef, {
           lastSeenByBuyer: currentRole === "buyer",
           lastSeenBySeller: currentRole === "seller",
         });
       } catch (error) {
-        console.error("Failed to mark chat as read");
+        console.error("Failed to mark chat as read", error);
       }
     };
 
     markChatAsRead();
-  }, [orderId, currentRole]);
+  }, [chatId, currentRole]);
 
   return (
     <div className="flex flex-col min-h-screen bg-surface max-w-md mx-auto">
