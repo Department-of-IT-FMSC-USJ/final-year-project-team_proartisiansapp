@@ -52,25 +52,26 @@ Format clearly with headings.
         )) || "";
 
       // Split response
-      const titleMatch = aiResponse.match(
-        /Product Title:(.*?)(Short Description:|$)/s,
-      );
-      const shortMatch = aiResponse.match(
-        /Short Description:(.*?)(Full Description:|$)/s,
-      );
-      const fullMatch = aiResponse.match(
-        /Full Description:(.*?)(Key Features:|$)/s,
-      );
-      const featuresMatch = aiResponse.match(
-        /Key Features:(.*?)(SEO Tags:|$)/s,
-      );
-      const seoMatch = aiResponse.match(/SEO Tags:(.*)/s);
+      const cleanResponse = aiResponse
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
 
-      setGeneratedTitle(titleMatch?.[1]?.trim() || "");
-      setShortDescription(shortMatch?.[1]?.trim() || "");
-      setFullDescription(fullMatch?.[1]?.trim() || aiResponse);
-      setKeyFeatures(featuresMatch?.[1]?.trim() || "");
-      setSeoTags(seoMatch?.[1]?.trim() || "");
+      const parsed = JSON.parse(cleanResponse);
+
+      setGeneratedTitle(parsed.productTitle || "");
+
+      setShortDescription(parsed.shortDescription || "");
+
+      setFullDescription(parsed.fullDescription || "");
+
+      setKeyFeatures(
+        Array.isArray(parsed.keyFeatures) ? parsed.keyFeatures.join("\n") : "",
+      );
+
+      setSeoTags(
+        Array.isArray(parsed.seoTags) ? parsed.seoTags.join(", ") : "",
+      );
     } catch (error: any) {
       console.error("Gemini Error:", error);
 
@@ -172,7 +173,7 @@ Format clearly with headings.
           <Button
             className="w-full h-14 rounded-2xl shadow-primary-glow"
             onClick={() =>
-              navigate("/add-product", {
+              navigate("/seller/add-product", {
                 state: {
                   ...location.state,
                   generatedDescription: fullDescription,

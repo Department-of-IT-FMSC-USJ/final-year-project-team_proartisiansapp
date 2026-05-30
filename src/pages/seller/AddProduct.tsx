@@ -318,7 +318,7 @@ export default function AddProduct() {
               variant="secondary"
               className="w-full text-xs gap-2 border border-primary-container/20"
               onClick={() =>
-                navigate("/description-assistant", {
+                navigate("/seller/description-assistant", {
                   state: {
                     productName,
                     category,

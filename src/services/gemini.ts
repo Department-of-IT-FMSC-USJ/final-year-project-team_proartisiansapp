@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 const genAI = new GoogleGenAI({
-  apiKey: "AIzaSyDAM5wSmQ2fLFQPNZhBwtaSDZqmIHKHIVA",
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
 });
 
 export async function generateProductDescription(
@@ -28,7 +28,7 @@ Return ONLY valid JSON. No explanations.
 `;
 
   const response = await genAI.models.generateContent({
-    model: "gemini-2.0-flash",
+    model: "gemini-2.5-flash-lite",
     contents: prompt,
   });
 
@@ -63,7 +63,7 @@ Respond in a friendly, helpful, concise way.
 `;
 
   const response = await genAI.models.generateContent({
-    model: "gemini-2.0-flash",
+    model: "gemini-2.5-flash-lite",
     contents: prompt,
   });
 
