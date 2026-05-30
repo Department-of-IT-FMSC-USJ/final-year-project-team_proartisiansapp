@@ -54,7 +54,6 @@ export default function ProductDetails() {
         collection(db, "chats"),
         where("buyerId", "==", buyerId),
         where("sellerId", "==", product.sellerId),
-        where("productId", "==", product.id),
       );
 
       const existingSnapshot = await getDocs(existingQuery);
@@ -70,9 +69,6 @@ export default function ProductDetails() {
 
         buyerName: auth.currentUser?.displayName || "Buyer",
         sellerName: product.sellerName,
-
-        productId: product.id,
-        productName: product.productName,
 
         participants: [buyerId, product.sellerId],
 

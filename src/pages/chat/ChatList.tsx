@@ -18,6 +18,16 @@ const ChatList = () => {
 
   const [chats, setChats] = useState<any[]>([]);
 
+  const handleBack = () => {
+    const role = localStorage.getItem("role");
+
+    if (role === "seller") {
+      navigate("/seller/dashboard");
+    } else {
+      navigate("/buyer/dashboard");
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       console.log("No user found");
@@ -76,7 +86,7 @@ const ChatList = () => {
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white border-b border-outline-variant/10 px-4 py-4">
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="size-10 rounded-2xl bg-white border border-outline-variant/20 flex items-center justify-center shadow-soft"
         >
           <ArrowLeft size={20} />

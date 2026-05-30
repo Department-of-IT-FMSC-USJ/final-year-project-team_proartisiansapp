@@ -53,7 +53,7 @@ export default function ShopSetup() {
       setSuccessMessage("✅ Shop profile saved successfully!");
 
       setTimeout(() => {
-        navigate("/welcome");
+        navigate("/seller/welcome");
       }, 1500);
     } catch (error) {
       setErrorMessage("❌ Failed to save shop profile.");
@@ -63,7 +63,7 @@ export default function ShopSetup() {
   };
 
   const handleSkip = () => {
-    navigate("/welcome");
+    navigate("/seller/welcome");
   };
 
   return (

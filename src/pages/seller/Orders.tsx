@@ -2,6 +2,7 @@ import { Package, Truck, CheckCircle2, Clock } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getDocs } from "firebase/firestore";
 
 import {
   collection,
@@ -12,11 +13,10 @@ import {
   updateDoc,
   getDoc,
   addDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 
 import { db, auth } from "@/src/firebase/firebaseConfig";
-
-import { Check, X } from "lucide-react";
 
 export default function Orders() {
   const [activeTab, setActiveTab] = useState("Active");
@@ -81,6 +81,7 @@ export default function Orders() {
       await updateDoc(doc(db, "orders", order.id), {
         status: "accepted",
       });
+
       await addDoc(collection(db, "notifications"), {
         userId: order.buyerId,
         title: "Order Accepted",
@@ -91,6 +92,27 @@ export default function Orders() {
       });
     } catch (error) {
       console.error("Failed to accept order", error);
+    }
+  };
+
+  const openChat = async (order: any) => {
+    try {
+      const chatQuery = query(
+        collection(db, "chats"),
+        where("buyerId", "==", order.buyerId),
+        where("sellerId", "==", order.sellerId),
+      );
+
+      const snapshot = await getDocs(chatQuery);
+
+      if (!snapshot.empty) {
+        navigate(`/chat/${snapshot.docs[0].id}`);
+        return;
+      }
+
+      alert("No conversation found");
+    } catch (error) {
+      console.error("Failed to open chat", error);
     }
   };
 
@@ -212,9 +234,7 @@ export default function Orders() {
                   >
                     Cancel
                   </button>
-                  <button onClick={() => navigate(`/chat/${order.id}`)}>
-                    Chat
-                  </button>
+                  <button onClick={() => openChat(order)}>Chat</button>
                 </>
               )}
 
@@ -240,9 +260,7 @@ export default function Orders() {
                     Complete Order
                   </button>
 
-                  <button onClick={() => navigate(`/chat/${order.id}`)}>
-                    Chat
-                  </button>
+                  <button onClick={() => openChat(order)}>Chat</button>
                 </>
               )}
 

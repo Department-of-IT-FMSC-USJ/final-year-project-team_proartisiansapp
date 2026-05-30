@@ -45,7 +45,7 @@ export default function Login() {
       setLoading(true);
 
       // signInWithGoogle expects one argument; pass null cast as any to satisfy TS
-      await signInWithGoogle(null as any);
+      await signInWithGoogle("seller");
 
       setIsAuthenticated(true);
 
