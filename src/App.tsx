@@ -16,6 +16,7 @@ import Orders from "./pages/seller/Orders";
 import Login from "./pages/seller/Login";
 import SellerInbox from "./pages/seller/SellerINbox";
 import SellerNotifications from "./pages/seller/SellerNotifications";
+import ImageEnhancer from "./pages/seller/ImageEnhancer";
 
 import BuyerDashboard from "./pages/buyer/BuyerDashboard";
 import BuyerAuth from "./pages/buyer/BuyerAuth";
@@ -59,6 +60,7 @@ function AppRoutes() {
         <Route path="seller/orders" element={<Orders />} />
         <Route path="seller/inbox" element={<SellerInbox />} />
         <Route path="seller/notifications" element={<SellerNotifications />} />
+        <Route path="seller/image-enhancer" element={<ImageEnhancer />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
       <Route path="/buyer/login" element={<BuyerLogin />} />

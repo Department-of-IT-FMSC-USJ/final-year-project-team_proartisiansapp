@@ -167,7 +167,12 @@ export default function AddProduct() {
       setDescription(
         location.state.generatedDescription || location.state.description || "",
       );
-      setImages(location.state.images || []);
+      if (location.state.enhancedImage) {
+        setImages([location.state.enhancedImage]);
+        setImageBase64(location.state.enhancedImage);
+      } else {
+        setImages(location.state.images || []);
+      }
     }
   }, [location.state]);
   return (
@@ -253,6 +258,18 @@ export default function AddProduct() {
             <Button
               variant="secondary"
               className="w-full text-xs gap-2 border border-primary-container/20"
+              onClick={() =>
+                navigate("/seller/image-enhancer", {
+                  state: {
+                    image: imageBase64,
+                    productName,
+                    category,
+                    price,
+                    stock,
+                    description,
+                  },
+                })
+              }
             >
               <Sparkles size={16} /> Enhance with AI
             </Button>
